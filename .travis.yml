@@ -1,0 +1,23 @@
+language: python
+python:
+  - "3.6"
+jobs:
+  include:
+    - name: 'Pylint'
+      install:
+        - pip install .
+        - pip install pylint pylint-quotes
+      script:
+        - pylint confugue
+    - name: 'Unit tests'
+      install:
+        - pip install .
+        - pip install pytest
+      script:
+        - PYTHONWARNINGS=ignore::DeprecationWarning pytest confugue
+    - name: 'Code style'
+      install:
+        - pip install pycodestyle pydocstyle
+      script:
+        - pycodestyle confugue
+        - pydocstyle confugue
