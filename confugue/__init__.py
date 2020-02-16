@@ -50,8 +50,8 @@ class Configuration:
             return self._wrapped
 
         if not hasattr(self._wrapped, '__getitem__'):
-            raise TypeError('Attempted to get item {} of configuration object {} of type {}'
-                            .format(repr(key), self._name_repr, type(self._wrapped)))
+            raise TypeError('Attempted to get item {} of non-indexable configuration object {} '
+                            'of type {}'.format(repr(key), self._name_repr, type(self._wrapped)))
 
         try:
             return self._wrapped[key]
