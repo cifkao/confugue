@@ -15,5 +15,9 @@ setuptools.setup(
     install_requires=[
         'cached_property',
         'pyyaml',
+        'wrapt'
     ],
+    tests_require=[
+        'pytest'
+    ]
 )
