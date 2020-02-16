@@ -14,7 +14,7 @@ jobs:
         - pip install .
         - pip install pytest
       script:
-        - PYTHONWARNINGS=ignore::DeprecationWarning pytest confugue
+        - pytest confugue --log-cli-level=DEBUG
     - name: 'Code style'
       install:
         - pip install pycodestyle pydocstyle
