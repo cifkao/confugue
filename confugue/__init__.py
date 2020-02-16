@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class Configuration:
+    REQUIRED = REQUIRED
 
     def __init__(self, value=_MISSING_VALUE, name='<default>'):
         self._wrapped = value
@@ -70,7 +71,8 @@ class Configuration:
         object corresponds to a missing key.
 
         Any keyword arguments passed to this function are treated as defaults and can be overridden
-        by the configuration.
+        by the configuration. A special `Configuration.REQUIRED` value can be used to mark a given
+        key as required.
 
         Returns:
             The return value of `constructor`, or `None` if the value of this configuration object
@@ -142,6 +144,14 @@ class Configuration:
             raise ConfigurationError('{} while configuring {}: {}'.format(
                 type(e).__name__, self._name_repr, e
             )).with_traceback(sys.exc_info()[2]) from None
+
+        # Check for missing required parameters.
+        missing_keys = [repr(k) for k, v in kwargs.items()
+                        if v is REQUIRED and k not in config_dict]
+        if missing_keys:
+            raise ConfigurationError('Error while configuring {}: required parameters {} missing '
+                                     'from configuration'.format(
+                                         self._name_repr, ', '.join(missing_keys)))
 
         # If the constructor is decorated with @configurable, we use _construct_configurable, which
         # creates a Configuration object and passes it to the constructor. Otherwise, we just call

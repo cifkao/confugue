@@ -1,4 +1,6 @@
-from confugue import Configuration, configurable
+import pytest
+
+from confugue import Configuration, ConfigurationError, configurable
 
 
 def test_configure_function():
@@ -48,7 +50,7 @@ def test_configure_list():
 def test_maybe_configure():
     @configurable
     def f(*, _cfg):
-        return (_cfg['not_present'].maybe_configure(dict),
+        return (_cfg['missing'].maybe_configure(dict),
                 _cfg['present'].maybe_configure(dict))
 
     result = Configuration({
@@ -69,9 +71,18 @@ def test_none_value():
 
 def test_configurable_with_params():
     @configurable(params=['a', 'c'])
-    def f(a, b, c, d=4):
+    def f(a, b, c, d=4, *, _cfg):
+        del _cfg
         return a, b, c, d
 
     result = Configuration({'a': 1, 'b': None, 'c': 3, 'd': 4}).configure(f, b=2)
     expected_result = (1, 2, 3, 4)
     assert result == expected_result
+
+
+def test_required():
+    cfg = Configuration({'present': 1})
+    with pytest.raises(ConfigurationError) as excinfo:
+        cfg.configure(dict, missing=cfg.REQUIRED)
+    assert "'missing'" in str(excinfo.value)
+    assert "'present'" not in str(excinfo.value)
