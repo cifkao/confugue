@@ -149,7 +149,7 @@ class Configuration:
         missing_keys = [repr(k) for k, v in kwargs.items()
                         if v is REQUIRED and k not in config_dict]
         if missing_keys:
-            raise ConfigurationError('Error while configuring {}: required parameters {} missing '
+            raise ConfigurationError('Error while configuring {}: required parameter(s) {} missing '
                                      'from configuration'.format(
                                          self._name_repr, ', '.join(missing_keys)))
 
