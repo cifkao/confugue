@@ -1,6 +1,6 @@
 import pytest
 
-from confugue import Configuration, ConfigurationError, configurable
+from confugue import Configuration, ConfigurationError, configurable, logger
 
 
 def test_configure_function():
@@ -91,9 +91,18 @@ def test_configurable_with_kwargs():
     assert result == expected_result
 
 
+def test_invalid_cfg_parameter():
+    with pytest.raises(ValueError) as excinfo:
+        @configurable
+        def f(a=1, _cfg=None):
+            del a, _cfg
+    logger.debug(excinfo.exconly())
+
+
 def test_required():
     cfg = Configuration({'present': 1})
     with pytest.raises(ConfigurationError) as excinfo:
         cfg.configure(dict, missing=cfg.REQUIRED)
+    logger.debug(excinfo.exconly())
     assert "'missing'" in str(excinfo.value)
     assert "'present'" not in str(excinfo.value)

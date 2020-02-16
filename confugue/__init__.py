@@ -281,10 +281,17 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
     else:
         argspec = inspect.getfullargspec(wrapped)
 
+        # Check that the _cfg parameter is a keyword-only argument (if present)
+        for arg_list in [argspec.args, argspec.varargs, argspec.varkw]:
+            if arg_list and cfg_param in arg_list:
+                raise ValueError("'{}' parameter defined in {}, but is not keyword-only"
+                                 .format(cfg_param, wrapped))
+
         @wrapt.decorator(adapter=_update_configurable_argspec(argspec, cfg_param))
         def _configurable(wrapped, instance, args, kwargs):
             del instance
-            kwargs[cfg_param] = default_cfg
+            if argspec.kwonlyargs and cfg_param in argspec.kwonlyargs:
+                kwargs[cfg_param] = default_cfg
             return wrapped(*args, **kwargs)
         wrapper = _configurable(wrapped)  # pylint: disable=no-value-for-parameter
         setattr(wrapper, _CFG_PARAM_ATTR, cfg_param if cfg_param in argspec.kwonlyargs else None)
