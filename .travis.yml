@@ -1,6 +1,5 @@
 language: python
-python:
-  - "3.6"
+python: '3.8'
 jobs:
   include:
     - name: 'Pylint'
@@ -9,7 +8,14 @@ jobs:
         - pip install pylint pylint-quotes
       script:
         - pylint confugue
-    - name: 'Unit tests'
+    - name: 'Unit tests (Python 3.5)'
+      python: '3.5'
+      install:
+        - pip install .
+        - pip install pytest
+      script:
+        - pytest confugue --log-cli-level=DEBUG
+    - name: 'Unit tests (Python 3.8)'
       install:
         - pip install .
         - pip install pytest
