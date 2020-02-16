@@ -96,6 +96,7 @@ def test_invalid_cfg_parameter():
         @configurable
         def f(a=1, _cfg=None):
             del a, _cfg
+        del f
     logger.debug(excinfo.exconly())
 
 
