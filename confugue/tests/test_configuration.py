@@ -80,6 +80,17 @@ def test_configurable_with_params():
     assert result == expected_result
 
 
+def test_configurable_with_kwargs():
+    @configurable
+    def f(a, *, _cfg, **kwargs):
+        del _cfg
+        return a, kwargs
+
+    result = Configuration({'a': 1, 'c': 3}).configure(f, b=2)
+    expected_result = (1, {'b': 2, 'c': 3})
+    assert result == expected_result
+
+
 def test_required():
     cfg = Configuration({'present': 1})
     with pytest.raises(ConfigurationError) as excinfo:
