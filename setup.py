@@ -7,7 +7,7 @@ with open("confugue/version.py") as f:
 
 setuptools.setup(
     name="confugue",
-    version=version.__version__,
+    version=version['__version__'],
     author="Ondřej Cífka",
     description="Hierarchical configuration framework",
     packages=setuptools.find_packages(),
