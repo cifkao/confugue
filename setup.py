@@ -11,7 +11,7 @@ setuptools.setup(
     author="Ondřej Cífka",
     description="Hierarchical configuration framework",
     packages=setuptools.find_packages(),
-    python_requires='>=3.3',
+    python_requires='>=3.5',
     install_requires=[
         'cached_property',
         'pyyaml',
