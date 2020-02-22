@@ -10,11 +10,21 @@ import yaml
 
 from confugue.version import __version__
 
-ALL = object()
-REQUIRED = object()
 
-_MISSING_VALUE = object()
-_NO_DEFAULT = object()
+class _SpecialValue:
+
+    def __init__(self, rep):
+        self._rep = rep
+
+    def __repr__(self):
+        return self._rep
+
+
+ALL = _SpecialValue('ALL')
+REQUIRED = _SpecialValue('REQUIRED')
+
+_MISSING_VALUE = _SpecialValue('MISSING_VALUE')
+_NO_DEFAULT = _SpecialValue('NO_DEFAULT')
 _CFG_ATTR = '__confugue_cfg'
 _PARAMS_ATTR = '__confugue_params'
 _CFG_PARAM_ATTR = '__confugue_cfg_param'
