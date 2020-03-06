@@ -97,7 +97,7 @@ class Configuration:
         configuration key (if the `constructor` parameter is not given, then the `class` key is
         required).
 
-        Any keyword arguments passed to this function are treated as defaults and can be overridden
+        Any keyword arguments passed to this method are treated as defaults and can be overridden
         by the configuration. A special :attr:`Configuration.REQUIRED` value can be used to mark a
         given key as required.
 
