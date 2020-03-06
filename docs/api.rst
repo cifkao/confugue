@@ -14,3 +14,5 @@ API Reference
    .. automethod:: configure_list(constructor=None, /, \*\*kwargs)
 
    .. automethod:: get
+
+.. autoclass:: ConfigurationError

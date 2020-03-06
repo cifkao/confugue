@@ -39,14 +39,15 @@ class Configuration:
     The core functionality is provided by the :meth:`configure` method, which calls a given
     callable with the arguments from the wrapped dictionary.
 
-    Indexing and iteration are supported, but the returned values are again wrapped in
-    :class:`Configuration` objects. If the user tries to access a key which is missing, an "empty"
-    configuration object is returned; this can still be used normally and behaves more or less
-    as if it contained an empty dictionary.
+    If the wrapped value is a dictionary or a list, basic operations such indexing and iteration
+    are supported, with the values recursively wrapped in :class:`Configuration` objects. If the
+    user tries to access a key or index which is missing, an "empty" configuration object is
+    returned; this can still be used normally and behaves more or less as if it contained an empty
+    dictionary.
 
-    The wrapped value need not be a dictionary or a list, but in this case, most of the methods
-    will raise an exception. To retrieve the raw wrapped value (whatever the type), use the
-    :meth:`get` method with no arguments.
+    The wrapped value may be of any other type, but in this case, most of the methods will raise
+    an exception. To retrieve the raw wrapped value (whatever the type), use the :meth:`get` method
+    with no arguments.
     """
 
     REQUIRED = REQUIRED
@@ -91,7 +92,7 @@ class Configuration:
         """Configure an object using this configuration.
 
         Calls `constructor` with the keyword arguments specified in this configuration object or
-        passed to this function. Note that the constructor is called even if this configuration
+        passed to this method. Note that the constructor is called even if this configuration
         object corresponds to a missing key. `constructor` may be overridden in by a `class`
         configuration key (if the `constructor` parameter is not given, then the `class` key is
         required).
@@ -101,11 +102,10 @@ class Configuration:
         given key as required.
 
         Returns:
-            The return value of `constructor`, or `None` if the value of this configuration object
-            is `None`.
+            The return value of `constructor`, or `None` if the wrapped value is `None`.
         Raises:
-            ConfigurationError: If the wrapped value has an incorrect type, if required arguments
-                are missing, or if any exception occurs while calling `constructor`.
+            ConfigurationError: If the wrapped value is not a dict, if required arguments are
+                missing, or if any exception occurs while calling `constructor`.
         """
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
@@ -118,9 +118,15 @@ class Configuration:
         return self._configure(self, config_val, constructor, kwargs)
 
     def maybe_configure(self, *args, **kwargs):
-        """Configure an object only if a configuration is present.
+        """Configure an object only if the configuration is present.
 
         Like `configure`, but returns `None` if the configuration is missing.
+
+        Returns:
+            The return value of `constructor`, or `None` if the wrapped value is missing or `None`.
+        Raises:
+            ConfigurationError: If the wrapped value is not a dict, if required arguments are
+                missing, or if any exception occurs while calling `constructor`.
         """
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
@@ -137,6 +143,13 @@ class Configuration:
         This method should be used if the configuration is expected to be a list. Every item of
         this list will then be used to configure a new object, as if :meth:`configure` was called on
         it. Any defaults supplied to this method will be used for all the items.
+
+        Returns:
+            A list containing the values obtained by configuring `constructor`, in turn, using all
+            the dicts in the wrapped list; `None` if the wrapped value is `None`.
+        Raises:
+            ConfigurationError: If the wrapped value is not a list of dicts, if required arguments
+                are missing, or if any exception occurs while calling `constructor`.
         """
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
@@ -165,8 +178,8 @@ class Configuration:
                 try:
                     constructor = config_dict['class']
                 except KeyError:
-                    # If no constructor was specified anywhere, return the original dictionary.
-                    return config_val
+                    raise ConfigurationError('Error while configuring {}: No constructor (class) '
+                                             'specified'.format(self._name_repr)) from None
 
                 del config_dict['class']
         except Exception as e:
@@ -306,13 +319,13 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
     The decorator may be used with or without parentheses (i.e. both :code:`@configurable`
     and :code:`@configurable()` is valid).
 
-    If the decorated object is a function, it needs to define a keyword-only argument :code:`_cfg`,
-    which will be automatically filled with an instance of :class:`Configuration` when the function
-    is called. If the decorated object is a class, a :code:`_cfg` property will be created
-    holding the :class:`Configuration` instance.
+    If the decorated callable is a function or method, it needs to define a keyword-only argument
+    :code:`_cfg`, which will be automatically filled with an instance of :class:`Configuration`
+    when the function is called. If the decorated callable is a class, a :code:`_cfg` property will
+    be created holding the :class:`Configuration` instance.
 
-    The decorated function/class can be called/instantiated normally, or via
-    :meth:`Configuration.configure`.
+    The decorated function/class can be called/instantiated normally (without passing the `_cfg`
+    argument), or via :meth:`Configuration.configure`.
 
     Args:
         params: A list of configuration keys to pass as keyword arguments. The default behavior is

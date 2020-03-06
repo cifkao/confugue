@@ -26,10 +26,10 @@ Hierarchical configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Although any function or class can be configured as described above, in order to make use of the hierarchical configuration mechanism, we need to decorate our functions and classes with the :func:`configurable` decorator.
-This enables them to access values from their parent :class:`Configuration` object, and use them to further configure other functions or class instances, as shown in the introductory example.
+This enables them to access values from their parent :class:`Configuration` object, and use them to further configure other functions or class instances.
 Decorated functions and classes each behave a bit differently:
 
-- A :code:`@configurable` function (or method) must define a keyword-only parameter :code:`_cfg`, which will be used to pass the parent configuration object.
+- A :code:`@configurable` function (or method) should define a `keyword-only parameter <https://python-3-for-scientists.readthedocs.io/en/latest/python3_advanced.html#keyword-only-arguments>`_ :code:`_cfg` (see below for an example of how to do that), which will be used to pass the parent configuration object.
 - A :code:`@configurable` class automatically receives a magic :code:`_cfg` property containing the parent configuration object. The property is set immediately upon the creation of the object, so that it can already be used in :code:`__init__`.
 
 In both cases, it is still possible to call the decorated function or class normally (rather than via :meth:`Configuration.configure`) with the same result as if the configuration file was empty.
