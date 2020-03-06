@@ -1,11 +1,11 @@
 Confugue
 ========
 
-.. highlight:: python
-
 :code:`confugue` is a hierarchical configuration framework for Python. It provides a wrapper class for nested configuration dictionaries (usually loaded from YAML files), which can be used to configure complicated object hierarchies in a recursive fashion.
 
-As an example, here is a simplified code snippet from a machine learning project which uses :code:`confugue`::
+As an example, here is a simplified code snippet from a machine learning project which uses :code:`confugue`:
+
+.. code-block:: python
 
    @configurable
    class Model:
