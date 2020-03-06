@@ -34,6 +34,20 @@ logger = logging.getLogger(__name__)
 
 
 class Configuration:
+    """Wrapper for nested configuration dictionaries or lists.
+
+    The core functionality is provided by the :meth:`configure` method, which calls a given
+    callable with the arguments from the wrapped dictionary.
+
+    Indexing and iteration are supported, but the returned values are again wrapped in
+    :class:`Configuration` objects. If the user tries to access a key which is missing, an "empty"
+    configuration object is returned; this can still be used normally and behaves more or less
+    as if it contained an empty dictionary.
+
+    The wrapped value need not be a dictionary or a list, but in this case, most of the methods
+    will raise an exception. To retrieve the raw wrapped value (whatever the type), use the
+    :meth:`get` method with no arguments.
+    """
     REQUIRED = REQUIRED
 
     def __init__(self, value=_MISSING_VALUE, name='<default>'):
@@ -42,14 +56,14 @@ class Configuration:
         self._child_configs = {}
 
     def get(self, key=None, default=_NO_DEFAULT):
-        """Return an item from this configuration object.
+        """Return an item from this configuration object (assuming the wrapped value is indexable).
 
         Returns:
             If `key` is given, the corresponding item from the wrapped object. Otherwise, the entire
-            wrapped value. If the key is missing, `default` is returned instead (if given).
+            wrapped value. If the value is missing, `default` is returned instead (if given).
         Raises:
-            KeyError: If the key is missing and no default was given.
-            IndexError: If the key is missing and no default was given.
+            KeyError: If the value is missing and no default was given.
+            IndexError: If the value is missing and no default was given.
             TypeError: If the wrapped object does not support indexing.
         """
         if self._wrapped is _MISSING_VALUE:
@@ -75,18 +89,22 @@ class Configuration:
     def configure(self, *args, **kwargs):
         """Configure an object using this configuration.
 
-        One optional positional argument is expected: `constructor`.
         Calls `constructor` with the keyword arguments specified in this configuration object or
         passed to this function. Note that the constructor is called even if this configuration
-        object corresponds to a missing key.
+        object corresponds to a missing key. `constructor` may be overridden in by a `class`
+        configuration key (if the `constructor` parameter is not given, then the `class` key is
+        required).
 
         Any keyword arguments passed to this function are treated as defaults and can be overridden
-        by the configuration. A special `Configuration.REQUIRED` value can be used to mark a given
+        by the configuration. A special :attr:`Configuration.REQUIRED` value can be used to mark a given
         key as required.
 
         Returns:
             The return value of `constructor`, or `None` if the value of this configuration object
             is `None`.
+        Raises:
+            ConfigurationError: If the wrapped value has an incorrect type, if required arguments
+                are missing, or if any exception occurs while calling `constructor`.
         """
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
@@ -116,8 +134,8 @@ class Configuration:
         """Configure a list of objects.
 
         This method should be used if the configuration is expected to be a list. Every item of
-        this list will then be used to configure a new object, as if `configure` was called on it.
-        Any defaults supplied to this method will be used for all the items.
+        this list will then be used to configure a new object, as if :meth:`configure` was called on
+        it. Any defaults supplied to this method will be used for all the items.
         """
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
@@ -180,9 +198,9 @@ class Configuration:
             )).with_traceback(sys.exc_info()[2]) from None
 
     def __getitem__(self, key):
-        """Return a `Configuration` object corresponding to the given key.
+        """Return a :class:`Configuration` object corresponding to the given key.
 
-        If the key is missing in the wrapped object, a `Configuration` object with a special
+        If the key is missing in the wrapped object, a :class:`Configuration` object with a special
         `<missing>` value is returned.
         """
         if key not in self._child_configs:
@@ -260,23 +278,26 @@ class Configuration:
 def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_cfg'):  # noqa: D417
     """A decorator that makes a function or a class configurable.
 
-    The configurable function/class can be called/instantiated normally, or via
-    `Configuration.configure`.
+    The decorator may be used with or without parentheses (i.e. both :code:`@configurable`
+    and :code:`@configurable()` is valid).
 
-    If the decorated object is a function, it needs to define a keyword-only argument `_cfg`, which
-    will be automatically filled with an instance of `Configuration` when the function is called.
-    If the decorated object is a class, a `_cfg` property will be created containing the
-    `Configuration` instance.
+    If the decorated object is a function, it needs to define a keyword-only argument :code:`_cfg`,
+    which will be automatically filled with an instance of :class:`Configuration` when the function
+    is called. If the decorated object is a class, a :code:`_cfg` property will be created
+    holding the :class:`Configuration` instance.
+
+    The decorated function/class can be called/instantiated normally, or via
+    :meth:`Configuration.configure`.
 
     Args:
         params: A list of configuration keys to pass as keyword arguments. The default behavior is
             to include all keys matching the function's signature, or all keys if the signature
             contains a `**` parameter.
-        cfg_property: The name of the property that will hold the `Configuration` object in the
-            case where a class is beging decorated (`_cfg` by default).
-        cfg_param: The name of the parameter that will receive the `Configuration` object in
-            the case where a function is being decorated (`_cfg` by default). This needs to be a
-            keyword-only argument.
+        cfg_property: The name of the property that will hold the :class:`Configuration` object in
+            the case where a class is beging decorated.
+        cfg_param: The name of the parameter that will receive the :class:`Configuration` object in
+            the case where a function is being decorated. This needs to be a keyword-only
+            parameter.
     """
     # The following is to allow the decorator to be used both with and without parentheses
     # (depending on whether or not the user wishes to pass arguments).
@@ -324,7 +345,7 @@ def _add_cfg_property(cls, name, value):
 
 
 def _update_configurable_argspec(argspec, cfg_param):
-    """Return an updated `FullArgSpec` for a `@configurable` function."""
+    """Return an updated :class:`FullArgSpec` for a configurable function."""
     return argspec._replace(
         kwonlyargs=argspec.kwonlyargs and [arg for arg in argspec.kwonlyargs if arg != cfg_param],
         kwonlydefaults=argspec.kwonlydefaults and {k: v for k, v in argspec.kwonlydefaults.items()
