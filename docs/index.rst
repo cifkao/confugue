@@ -186,10 +186,3 @@ API Reference
 
 .. autodecorator:: configurable(\*, params=ALL, cfg_property='_cfg', cfg_param='_cfg')
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
