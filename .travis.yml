@@ -14,13 +14,13 @@ jobs:
         - pip install .
         - pip install pytest
       script:
-        - pytest confugue --log-cli-level=DEBUG
+        - pytest tests --log-cli-level=DEBUG
     - name: 'Unit tests (Python 3.8)'
       install:
         - pip install .
         - pip install pytest
       script:
-        - pytest confugue --log-cli-level=DEBUG
+        - pytest tests --log-cli-level=DEBUG
     - name: 'Code style'
       install:
         - pip install pycodestyle pydocstyle
