@@ -48,6 +48,7 @@ class Configuration:
     will raise an exception. To retrieve the raw wrapped value (whatever the type), use the
     :meth:`get` method with no arguments.
     """
+
     REQUIRED = REQUIRED
 
     def __init__(self, value=_MISSING_VALUE, name='<default>'):
@@ -96,8 +97,8 @@ class Configuration:
         required).
 
         Any keyword arguments passed to this function are treated as defaults and can be overridden
-        by the configuration. A special :attr:`Configuration.REQUIRED` value can be used to mark a given
-        key as required.
+        by the configuration. A special :attr:`Configuration.REQUIRED` value can be used to mark a
+        given key as required.
 
         Returns:
             The return value of `constructor`, or `None` if the value of this configuration object
@@ -272,6 +273,8 @@ class Configuration:
         Args:
             stream: A YAML string or an open file object.
             loader: One of PyYAML's loader classes.
+        Returns:
+            A :class:`Configuration` instance wrapping the loaded configuration.
         """
         return cls(yaml.load(stream, Loader=loader), '<root>')
 
@@ -286,6 +289,8 @@ class Configuration:
         Args:
             stream: A path to a YAML file, or an open file object.
             loader: One of PyYAML's loader classes.
+        Returns:
+            A :class:`Configuration` instance wrapping the loaded configuration.
         """
         if isinstance(stream, str):
             with open(stream, 'rb') as f:
