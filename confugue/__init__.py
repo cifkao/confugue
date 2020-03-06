@@ -263,10 +263,30 @@ class Configuration:
 
     @classmethod
     def from_yaml(cls, stream, loader=yaml.UnsafeLoader):
+        """Create a configuration from YAML.
+
+        The configuration is loaded using PyYAML's :class:`UnsafeLoader` by default. If you wish
+        to load configuration files from untrusted sources, you should pass
+        :code:`loader=yaml.SafeLoader`.
+
+        Args:
+            stream: A YAML string or an open file object.
+            loader: One of PyYAML's loader classes.
+        """
         return cls(yaml.load(stream, Loader=loader), '<root>')
 
     @classmethod
     def from_yaml_file(cls, stream, loader=yaml.UnsafeLoader):
+        """Create a configuration from a YAML file.
+
+        The configuration is loaded using PyYAML's :class:`UnsafeLoader` by default. If you wish
+        to load configuration files from untrusted sources, you should pass
+        :code:`loader=yaml.SafeLoader`.
+
+        Args:
+            stream: A path to a YAML file, or an open file object.
+            loader: One of PyYAML's loader classes.
+        """
         if isinstance(stream, str):
             with open(stream, 'rb') as f:
                 return cls.from_yaml(f, loader)
