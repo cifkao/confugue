@@ -340,7 +340,8 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
     # The following is to allow the decorator to be used both with and without parentheses
     # (depending on whether or not the user wishes to pass arguments).
     if wrapped is None:
-        return functools.partial(configurable, params=params, cfg_property=cfg_property)
+        return functools.partial(
+            configurable, params=params, cfg_property=cfg_property, cfg_param=cfg_param)
 
     default_cfg = Configuration(_MISSING_VALUE)
 
