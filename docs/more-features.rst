@@ -6,13 +6,13 @@ Maybe configure
 ~~~~~~~~~~~~~~~
 We have seen that we can omit parts of the configuration file as long as defaults for all the required parameters are defined in the code.
 However, we might sometimes want to skip creating an object if the corresponding key is omitted from the configuration.
-This functionality is provided by the :meth:`Configurable.maybe_configure` method, which returns :code:`None` if the configuration value is missing.
+This functionality is provided by the :meth:`Configuration.maybe_configure` method, which returns :code:`None` if the configuration value is missing.
 
 Configuring lists
 ~~~~~~~~~~~~~~~~~
 We might also want to create a list of objects of the same type, with arguments supplied in the configuration file.
 This can be useful for example when creating a deep neural network with layers of different sizes.
-In this situation, we can use the :meth:`Configurable.configure_list` method, like so::
+In this situation, we can use the :meth:`Configuration.configure_list` method, like so::
 
    _cfg['fc_layers'].configure_list(tf.keras.layers.Dense, activation='relu')
 
