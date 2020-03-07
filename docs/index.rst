@@ -57,6 +57,6 @@ Contents
 .. toctree::
    :maxdepth: 2
 
-   getting_started
-   more_features
+   getting-started
+   more-features
    api
