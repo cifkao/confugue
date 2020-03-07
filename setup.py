@@ -20,8 +20,8 @@ setuptools.setup(
     packages=setuptools.find_packages(exclude=['tests', 'tests.*']),
     python_requires='>=3.5',
     install_requires=[
-        'pyyaml',
-        'wrapt'
+        'pyyaml>=5.1',
+        'wrapt>=1.10.0'
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
