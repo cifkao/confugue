@@ -1,5 +1,6 @@
 More Features
 -------------
+.. currentmodule:: confugue
 
 Maybe configure
 ~~~~~~~~~~~~~~~
