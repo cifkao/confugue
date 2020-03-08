@@ -14,11 +14,11 @@ Next, we need to create a :class:`Configuration` object. Typically, we will do t
 
    config = Configuration.from_yaml_file('config.yaml')
 
-:code:`config` now acts as a wrapper for the contents of :file:`config.yaml`, and can be used to configure a function or class constructor, like so::
+:code:`config` now acts as a wrapper for the contents of :file:`config.yaml`, and can be used to configure our :code:`main()` function, like so::
 
    config.configure(main, foo=1, bar=2)  # baz needs to be set in config.yaml
 
-The code above will call :code:`main` with the given arguments, plus any arguments defined in the configuration. The values specified in the code are treated as defaults and can be overridden by the configuration. For example, if :file:`config.yaml` looks like this...
+The code above will call :code:`main()` with the given arguments, plus any arguments defined in the configuration. The values specified in the code are treated as defaults and can be overridden by the configuration. For example, if :file:`config.yaml` looks like this...
 
 .. code-block:: yaml
 
