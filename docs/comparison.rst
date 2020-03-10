@@ -23,7 +23,7 @@ Some other differences (which may be viewed as advantages or disadvantages in di
 Sacred
 ~~~~~~
 
-`Sacred <https://github.com/IDSIA/sacred>`_ also offers configuration functionality, but its goals are much broader, focusing on experiment managament (including keeping track of metrics and other information). Confugue, on the other hand, is not specifically targeted to scientific experimentation (even though it is particularly well suited for machine learning experiments). As for the configuration mechanism itself, Sacred has so-called 'captured functions' which work similarly to configurable functions in Confugue or Gin, but does not offer the same ability to configure arbitrary objects in a hierarchical way.
+`Sacred <https://github.com/IDSIA/sacred>`_ also offers configuration functionality, but its goals are much broader, focusing on experiment management (including keeping track of metrics and other information). Confugue, on the other hand, is not specifically targeted to scientific experimentation (even though it is particularly well suited for machine learning experiments). As for the configuration mechanism itself, Sacred has so-called 'captured functions' which work similarly to configurable functions in Confugue or Gin, but does not offer the same ability to configure arbitrary objects in a hierarchical way.
 
 .. |build-status| image:: https://travis-ci.com/cifkao/confugue.svg?branch=master
    :target: https://travis-ci.com/cifkao/confugue
