@@ -67,7 +67,7 @@ Some advantages of Confugue over Gin are:
 - It is possible to access (and even manipulate) configuration values explicitly instead of (or in addition to) having them supplied as parameters.
 - The structure of the config file is nested – typically following the call hierarchy – compared to Gin's linear structure.
 
-On the other hand, Confugue doesn't have some of the advanced features of Gin, such as config file inclusion or "operative configuration" logging. It also doesn't support macros, but `PyYAML's aliases <https://pyyaml.org/wiki/PyYAMLDocumentation#aliases>`_ provide similar functionality.
+On the other hand, Confugue doesn't have some of the advanced features of Gin, such as config file inclusion or 'operative configuration' logging. It also doesn't support macros, but `PyYAML's aliases <https://pyyaml.org/wiki/PyYAMLDocumentation#aliases>`_ provide similar functionality.
 
 Some other differences (which may be viewed as advantages or disadvantages in different situations) are:
 
