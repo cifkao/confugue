@@ -62,3 +62,4 @@ Contents
    getting-started
    more-features
    api
+   comparison
