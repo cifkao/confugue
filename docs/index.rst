@@ -5,9 +5,9 @@ Confugue
 Introduction
 ------------
 
-:mod:`confugue` is a hierarchical configuration framework for Python. It provides a wrapper class for nested configuration dictionaries (usually loaded from YAML files), which can be used to configure complicated object hierarchies in a recursive fashion.
+Confugue is a hierarchical configuration framework for Python. It provides a wrapper class for nested configuration dictionaries (usually loaded from YAML files), which can be used to easily configure complicated object hierarchies.
 
-As an example, here is a simplified code snippet from a machine learning project which uses :mod:`confugue`::
+The package is ideal for configuring deep learning experiments. These often have large numbers of hyperparameters, and managing all their values globally can quickly get tedious. Instead, Confugue allows each part of the deep learning model to be automatically supplied with hyperparameters from a configuration file, eliminating the need to pass them around. The structure of the configuration file follows the hierarchy of the model architecture; for example, if the model has multiple encoders consisting of several layers, then each layer will have its section in the configuration file, nested under the corresponding encoder section.
 
    @configurable
    class Model:
