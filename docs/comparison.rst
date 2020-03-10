@@ -7,7 +7,7 @@ Gin
 Confugue is similar to `Gin <https://github.com/google/gin-config>`_, but is much more minimalistic yet still very powerful.
 Some advantages of Confugue over Gin are:
 
-- It is straightforward to configure many objects of the same type with different parameters for each; in Gin, this requires a scoping mechanism.
+- It is straightforward to configure many objects of the same type with different parameters for each; with Gin, this is possible, but it requires using a scoping mechanism.
 - Any function or class can be configured without having been explicitly registered. 
 - Config files may override the type of an object (or the function being called) while preserving the default parameters provided by the caller.
 - It is possible to access (and even manipulate) configuration values explicitly instead of (or in addition to) having them supplied as parameters.
