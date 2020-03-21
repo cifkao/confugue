@@ -4,6 +4,7 @@ import functools
 import inspect
 import logging
 import sys
+import warnings
 
 import wrapt
 import yaml
@@ -55,7 +56,10 @@ class Configuration:
     def __init__(self, value=_MISSING_VALUE, name='<root>'):
         self._wrapped = value
         self.name = name
+        self.parent = None
+        self._parent_key = None
         self._child_configs = {}
+        self._used_keys = set()
 
     def get(self, key=None, default=_NO_DEFAULT):
         """Return an item from this configuration object (assuming the wrapped value is indexable).
@@ -68,12 +72,17 @@ class Configuration:
             IndexError: If the value is missing and no default was given.
             TypeError: If the wrapped object does not support indexing.
         """
+        return self._get(key, default, mark_used=True)
+
+    def _get(self, key, default, mark_used=False):
         if self._wrapped is _MISSING_VALUE:
             if default is _NO_DEFAULT:
                 raise KeyError('Missing configuration value {}'.format(self._name_repr))
             return default
 
         if key is None:
+            if mark_used:
+                self._mark_used()
             return self._wrapped
 
         if not hasattr(self._wrapped, '__getitem__'):
@@ -81,7 +90,10 @@ class Configuration:
                             'of type {}'.format(repr(key), self._name_repr, type(self._wrapped)))
 
         try:
-            return self._wrapped[key]
+            value = self._wrapped[key]
+            if mark_used:
+                self._used_keys.add(key)
+            return value
         except (KeyError, IndexError) as e:
             if default is _NO_DEFAULT:
                 raise type(e)("Missing configuration value '{}'".format(
@@ -111,11 +123,11 @@ class Configuration:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
 
-        config_val = self.get(default={})
+        config_val = self._get(key=None, default={}, mark_used=True)
         if config_val is None:
             return None
 
-        return self._configure(self, config_val, constructor, kwargs)
+        return self._configure(config_val, constructor, kwargs)
 
     def maybe_configure(self, *args, **kwargs):
         """Configure an object only if the configuration is present.
@@ -133,6 +145,7 @@ class Configuration:
         constructor = args[0] if args else None
 
         if self._wrapped is _MISSING_VALUE:
+            self._mark_used()
             return None
 
         return self.configure(constructor, **kwargs)
@@ -155,14 +168,14 @@ class Configuration:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
 
-        config_val = self.get(default=[])
+        config_val = self._get(key=None, default=[], mark_used=True)
         if config_val is None:
             return None
 
-        return [self._configure(self[i], config_item, constructor, kwargs)
+        return [self[i]._configure(config_item, constructor, kwargs)  # pylint: disable=protected-access
                 for i, config_item in enumerate(config_val)]
 
-    def _configure(self, config, config_val, constructor, kwargs):
+    def _configure(self, config_val, constructor, kwargs):
         # If config_value is not a dictionary, we just use the value as it is, unless the caller
         # has specified a constructor (in which case we raise an error).
         if type(config_val) is not dict:
@@ -200,7 +213,10 @@ class Configuration:
         # the constructor.
         try:
             if hasattr(constructor, _WRAPPED_ATTR):
-                return _construct_configurable(constructor, kwargs, config_dict, cfg=config)
+                result, used_keys = _construct_configurable(constructor, kwargs, config_dict,
+                                                            cfg=self)
+                self._used_keys.update(used_keys)
+                return result
 
             kwargs = {**kwargs, **config_dict}
             _log_call(constructor, kwargs=kwargs)
@@ -218,8 +234,11 @@ class Configuration:
         `<missing>` value is returned.
         """
         if key not in self._child_configs:
-            self._child_configs[key] = Configuration(self.get(key, _MISSING_VALUE),
-                                                     name=self._get_key_name(key))
+            cfg = Configuration(self._get(key, _MISSING_VALUE),
+                                name=self._get_key_name(key))
+            cfg.parent = self
+            cfg._parent_key = key
+            self._child_configs[key] = cfg
         return self._child_configs[key]
 
     def __setitem__(self, key, value):
@@ -235,6 +254,8 @@ class Configuration:
             del self._wrapped[key]
         except (KeyError, IndexError, TypeError) as e:
             raise type(e)('{}: {}'.format(self.name, e)) from None
+        if key in self._child_configs:
+            del self._child_configs[key]
 
     def __iter__(self):
         try:
@@ -261,6 +282,49 @@ class Configuration:
         return 'Configuration({}{})'.format(
             repr(self._wrapped) if self._wrapped is not _MISSING_VALUE else '<missing>',
             ', name={}'.format(self._name_repr) if not self._is_special_name else '')
+
+    def get_unused_keys(self, warn=False):
+        """Recursively find keys that were never accessed.
+
+        Args:
+            warn: If `True`, a warning will be issued if unused keys are found.
+        Returns:
+            A list of unused keys.
+        """
+        if type(self._wrapped) is dict:
+            keys = self._wrapped.keys()
+        elif type(self._wrapped) is list:
+            keys = range(len(self._wrapped))
+        else:
+            keys = []
+
+        unused_keys = []
+        for key in keys:
+            child_unused_keys = []
+            # Report the unused keys in this subtree iff there are also some used keys.
+            if (key in self._child_configs and
+                    self._child_configs[key]._has_used_keys()):  # pylint: disable=protected-access
+                child_unused_keys = self._child_configs[key].get_unused_keys()
+            unused_keys.extend(child_unused_keys)
+            # Only report this key if no key from its subtree was reported above.
+            if not child_unused_keys and key not in self._used_keys:
+                unused_keys.append(self._get_key_name(key))
+
+        if unused_keys and warn:
+            warnings.warn('Found {} unused keys: {}'.format(len(unused_keys),
+                                                            ', '.join(unused_keys)),
+                          ConfigurationWarning)
+
+        return unused_keys
+
+    def _has_used_keys(self):
+        return (len(self._used_keys) > 0 or
+                any(cfg._has_used_keys()  # pylint: disable=protected-access
+                    for cfg in self._child_configs.values()))
+
+    def _mark_used(self):
+        if self.parent is not None and self._parent_key is not None:
+            self.parent._used_keys.add(self._parent_key)  # pylint: disable=protected-access
 
     @property
     def _name_repr(self):
@@ -420,13 +484,13 @@ def _construct_configurable(x, kwargs, config_dict, cfg):
         obj = x.__new__(x, **kwargs)
         setattr(obj, _CFG_ATTR, cfg)
         obj.__init__(**kwargs)
-        return obj
+        return obj, param_names
     else:
         wrapped = getattr(x, _WRAPPED_ATTR)
         cfg_param = getattr(x, _CFG_PARAM_ATTR)
         if cfg_param is not None:
             kwargs[cfg_param] = cfg
-        return wrapped(**kwargs)
+        return wrapped(**kwargs), param_names
 
 
 def _log_call(fn, args=None, kwargs=None):
@@ -444,4 +508,8 @@ def _log_call(fn, args=None, kwargs=None):
 
 
 class ConfigurationError(Exception):
+    pass
+
+
+class ConfigurationWarning(Warning):
     pass

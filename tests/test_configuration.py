@@ -1,6 +1,7 @@
 import pytest
 
-from confugue import Configuration, ConfigurationError, configurable, logger
+from confugue import (Configuration, ConfigurationError, ConfigurationWarning,
+                      configurable, logger)
 
 
 def test_configure_function():
@@ -107,3 +108,29 @@ def test_required():
     logger.debug(excinfo.exconly())
     assert "'missing'" in str(excinfo.value)
     assert "'present'" not in str(excinfo.value)
+
+
+def test_get_unused_keys():
+    @configurable
+    def f(a, b, *, _cfg):
+        _cfg['g'].configure(g)
+        _cfg['g_list'].configure_list(g)
+
+    @configurable
+    def g(a):
+        pass
+
+    cfg = Configuration({
+        'a': 1, 'b': 2,
+        'unused': {'a': 1, 'b': 2},
+        'g': {'a': 1, 'unused': 2},
+        'g_list': [{'a': 1, 'unused': 2}],
+        'x': {'a': 1, 'unused': {'b': 2}},
+    })
+    cfg.configure(f)
+    cfg['x']['a'].get()
+    cfg['unused']  # we are not accessing the value
+
+    with pytest.warns(ConfigurationWarning):
+        unused_keys = cfg.get_unused_keys(warn=True)
+    assert set(unused_keys) == {'unused', 'g.unused', 'g_list[0].unused', 'x.unused'}
