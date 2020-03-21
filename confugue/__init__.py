@@ -52,7 +52,7 @@ class Configuration:
 
     REQUIRED = REQUIRED
 
-    def __init__(self, value=_MISSING_VALUE, name='<default>'):
+    def __init__(self, value=_MISSING_VALUE, name='<root>'):
         self._wrapped = value
         self.name = name
         self._child_configs = {}
@@ -289,7 +289,7 @@ class Configuration:
         Returns:
             A :class:`Configuration` instance wrapping the loaded configuration.
         """
-        return cls(yaml.load(stream, Loader=loader), '<root>')
+        return cls(yaml.load(stream, Loader=loader))
 
     @classmethod
     def from_yaml_file(cls, stream, loader=yaml.UnsafeLoader):
@@ -343,7 +343,7 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
         return functools.partial(
             configurable, params=params, cfg_property=cfg_property, cfg_param=cfg_param)
 
-    default_cfg = Configuration(_MISSING_VALUE)
+    default_cfg = Configuration(_MISSING_VALUE, name='<default>')
 
     if inspect.isclass(wrapped):
         _add_cfg_property(wrapped, cfg_property, default_cfg)
