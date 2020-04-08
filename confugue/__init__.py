@@ -101,7 +101,7 @@ class Configuration:
             return default
 
     def configure(self, *args, **kwargs):
-        """Configure an object using this configuration.
+        """Configure a callable using this configuration.
 
         Calls `constructor` with the keyword arguments specified in this configuration object or
         passed to this method. Note that the constructor is called even if this configuration
@@ -119,20 +119,27 @@ class Configuration:
             ConfigurationError: If the wrapped value is not a dict, if required arguments are
                 missing, or if any exception occurs while calling `constructor`.
         """
-        if len(args) > 1:
-            raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
-        constructor = args[0] if args else None
+        return self._configure(args, kwargs)
 
-        config_val = self._get(key=None, default={}, mark_used=True)
-        if config_val is None:
-            return None
+    def bind(self, *args, **kwargs):
+        """Configure a callable without calling it.
 
-        return self._configure(config_val, constructor, kwargs)
+        Like :meth:`configure`, but instead of calling `constructor` directly, it returns a new
+        function that calls `constructor` with parameters bound to the supplied values. The
+        function may still accept other parameters.
+
+        Returns:
+            A function, or `None` if the wrapped value is `None`.
+        Raises:
+            ConfigurationError: If the wrapped value is not a dict, or if required arguments are
+                missing.
+        """
+        return self._configure(args, kwargs, bind_only=True)
 
     def maybe_configure(self, *args, **kwargs):
-        """Configure an object only if the configuration is present.
+        """Configure a callable only if the configuration is present.
 
-        Like `configure`, but returns `None` if the configuration is missing.
+        Like :meth:`configure`, but returns `None` if the configuration is missing.
 
         Returns:
             The return value of `constructor`, or `None` if the wrapped value is missing or `None`.
@@ -140,15 +147,35 @@ class Configuration:
             ConfigurationError: If the wrapped value is not a dict, if required arguments are
                 missing, or if any exception occurs while calling `constructor`.
         """
+        return self._configure(args, kwargs, maybe=True)
+
+    def maybe_bind(self, *args, **kwargs):
+        """Configure a callable without calling it, but only if the configuration is present.
+
+        Like :meth:`bind`, but returns `None` if the configuration is missing.
+
+        Returns:
+            A function, or `None` if the wrapped value is missing or `None`.
+        Raises:
+            ConfigurationError: If the wrapped value is not a dict, or if required arguments are
+                missing.
+        """
+        return self._configure(args, kwargs, maybe=True, bind_only=True)
+
+    def _configure(self, args, kwargs, maybe=False, bind_only=False):
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
 
-        if self._wrapped is _MISSING_VALUE:
+        if maybe and self._wrapped is _MISSING_VALUE:
             self._mark_used()
             return None
 
-        return self.configure(constructor, **kwargs)
+        config_val = self._get(key=None, default={}, mark_used=True)
+        if config_val is None:
+            return None
+
+        return self._configure_impl(config_val, constructor, kwargs, bind_only)
 
     def configure_list(self, *args, **kwargs):
         """Configure a list of objects.
@@ -172,14 +199,14 @@ class Configuration:
         if config_val is None:
             return None
 
-        return [self[i]._configure(config_item, constructor, kwargs)  # pylint: disable=protected-access
+        return [self[i]._configure_impl(config_item, constructor, kwargs)  # pylint: disable=protected-access
                 for i, config_item in enumerate(config_val)]
 
-    def _configure(self, config_val, constructor, kwargs):
+    def _configure_impl(self, config_val, constructor, kwargs, bind_only=False):
         # If config_value is not a dictionary, we just use the value as it is, unless the caller
         # has specified a constructor (in which case we raise an error).
         if type(config_val) is not dict:
-            if constructor or kwargs:
+            if constructor or kwargs or bind_only:
                 raise ConfigurationError('Error while configuring {}: dict expected, got {}'.format(
                     self._name_repr, type(config_val)))
             return config_val
@@ -214,13 +241,16 @@ class Configuration:
         try:
             if hasattr(constructor, _WRAPPED_ATTR):
                 result, used_keys = _construct_configurable(constructor, kwargs, config_dict,
-                                                            cfg=self)
+                                                            cfg=self, bind_only=bind_only)
                 self._used_keys.update(used_keys)
                 return result
 
             kwargs = {**kwargs, **config_dict}
-            _log_call(constructor, kwargs=kwargs)
-            return constructor(**kwargs)
+            _log_call(constructor, kwargs=kwargs, bind_only=bind_only)
+            if bind_only:
+                return functools.partial(constructor, **kwargs)
+            else:
+                return constructor(**kwargs)
         except TypeError as e:
             raise ConfigurationError('{} while configuring {} ({!r}): {}'.format(
                 type(e).__name__, self._name_repr,
@@ -457,7 +487,7 @@ def _update_configurable_argspec(argspec, cfg_param):
                                              if k != cfg_param})
 
 
-def _construct_configurable(x, kwargs, config_dict, cfg):
+def _construct_configurable(x, kwargs, config_dict, cfg, bind_only):
     # Determine which parameters to look for in the configuration
     param_names = getattr(x, _PARAMS_ATTR)
     if param_names is None:
@@ -478,22 +508,30 @@ def _construct_configurable(x, kwargs, config_dict, cfg):
     kwargs = dict(kwargs)
     kwargs.update({k: v for k, v in config_dict.items() if k in param_names})
 
-    _log_call(x, kwargs=kwargs)
+    # Create a wrapper so that we can use functools.partial on it if bind_only is True
+    @functools.wraps(x)
+    def wrapper(**kwargs):
+        if inspect.isclass(x):
+            obj = x.__new__(x, **kwargs)
+            setattr(obj, _CFG_ATTR, cfg)
+            obj.__init__(**kwargs)
+            return obj
+        else:
+            wrapped = getattr(x, _WRAPPED_ATTR)
+            cfg_param = getattr(x, _CFG_PARAM_ATTR)
+            if cfg_param is not None:
+                kwargs[cfg_param] = cfg
+            return wrapped(**kwargs)
 
-    if inspect.isclass(x):
-        obj = x.__new__(x, **kwargs)
-        setattr(obj, _CFG_ATTR, cfg)
-        obj.__init__(**kwargs)
-        return obj, param_names
+    _log_call(x, kwargs=kwargs, bind_only=bind_only)
+
+    if bind_only:
+        return functools.partial(wrapper, **kwargs), param_names
     else:
-        wrapped = getattr(x, _WRAPPED_ATTR)
-        cfg_param = getattr(x, _CFG_PARAM_ATTR)
-        if cfg_param is not None:
-            kwargs[cfg_param] = cfg
-        return wrapped(**kwargs), param_names
+        return wrapper(**kwargs), param_names
 
 
-def _log_call(fn, args=None, kwargs=None):
+def _log_call(fn, args=None, kwargs=None, bind_only=False):
     args = args or []
     kwargs = kwargs or {}
 
@@ -504,7 +542,8 @@ def _log_call(fn, args=None, kwargs=None):
         formatted_args = ([repr(a) for a in args] +
                           ['{}={!r}'.format(k, v) for k, v in kwargs.items()])
 
-    logger.debug('Calling {}({})'.format(fn.__name__, ', '.join(formatted_args)))
+    logger.debug('{} {}({})'.format('Binding' if bind_only else 'Calling',
+                                    fn.__name__, ', '.join(formatted_args)))
 
 
 class ConfigurationError(Exception):

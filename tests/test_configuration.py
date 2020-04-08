@@ -33,6 +33,22 @@ def test_configure_class():
     assert result == expected_result
 
 
+def test_bind():
+    @configurable
+    class A:
+
+        def __init__(self, a, b, c, d, e=5):
+            assert 'obj' in self._cfg
+            self.obj = self._cfg['obj'].bind(dict, a=a, c=c, d=d, e=e)(b=b)
+
+    result = Configuration({
+        'a': 10, 'b': 2, 'c': 3,
+        'obj': {'a': 1, 'f': 6}
+    }).bind(A, a=0, c=300)(d=4).obj
+    expected_result = {'a': 1, 'b': 2, 'c': 3, 'd': 4, 'e': 5, 'f': 6}
+    assert result == expected_result
+
+
 def test_configure_list():
     @configurable
     def f(*, _cfg):

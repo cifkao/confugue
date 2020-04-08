@@ -13,6 +13,10 @@ API Reference
 
    .. automethod:: configure_list(constructor=None, /, \*\*kwargs)
 
+   .. automethod:: bind(constructor=None, /, \*\*kwargs)
+
+   .. automethod:: maybe_bind(constructor=None, /, \*\*kwargs)
+
    .. automethod:: get
 
 .. autoclass:: ConfigurationError
