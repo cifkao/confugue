@@ -243,14 +243,15 @@ class Configuration:
                 result, used_keys = _construct_configurable(constructor, kwargs, config_dict,
                                                             cfg=self, bind_only=bind_only)
                 self._used_keys.update(used_keys)
-                return result
-
-            kwargs = {**kwargs, **config_dict}
-            _log_call(constructor, kwargs=kwargs, bind_only=bind_only)
-            if bind_only:
-                return functools.partial(constructor, **kwargs)
             else:
-                return constructor(**kwargs)
+                kwargs = {**kwargs, **config_dict}
+                _log_call(constructor, kwargs=kwargs, bind_only=bind_only)
+                if bind_only:
+                    result = functools.partial(constructor, **kwargs)
+                else:
+                    result = constructor(**kwargs)
+                self._used_keys.update(config_dict.keys())
+            return result
         except TypeError as e:
             raise ConfigurationError('{} while configuring {} ({!r}): {}'.format(
                 type(e).__name__, self._name_repr,
