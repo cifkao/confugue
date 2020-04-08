@@ -40,7 +40,7 @@ class Configuration:
     The core functionality is provided by the :meth:`configure` method, which calls a given
     callable with the arguments from the wrapped dictionary.
 
-    If the wrapped value is a dictionary or a list, basic operations such indexing and iteration
+    If the wrapped value is a dictionary or a list, basic operations such as indexing and iteration
     are supported, with the values recursively wrapped in :class:`Configuration` objects. If the
     user tries to access a key or index which is missing, an "empty" configuration object is
     returned; this can still be used normally and behaves more or less as if it contained an empty
