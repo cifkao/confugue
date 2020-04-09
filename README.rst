@@ -48,7 +48,7 @@ The model could then be configured using the following config file, overriding t
 Installation & Documentation
 ----------------------------
 
-A full documentation can be found `here <https://confugue.readthedocs.io/>`_.
+Full documentation can be found `here <https://confugue.readthedocs.io/>`_.
 
 The package is available from PyPI and can be installed with :code:`pip install confugue`.
 
