@@ -38,11 +38,24 @@ The configuration file might then look like this:
      - units: 2
        activation: None
 
+.. _Argument binding:
+
+Argument binding
+~~~~~~~~~~~~~~~~
+It is sometimes useful to pre-configure a callable without actually calling it, for example if we intend to call it multiple times or want to supply additional arguments later.
+This can be achieved using the :meth:`bind() <Configuration.bind>` method, e.g.::
+
+  Dense = _cfg['data_loading'].bind(tf.keras.layers.Dense, activation='relu')
+  dense1 = Dense()  # parameters supplied by configuration
+  dense2 = Dense(use_bias=False, activation=None)  # overrides configuration
+
 Maybe configure
 ~~~~~~~~~~~~~~~
 We have seen that we can omit parts of the configuration file as long as defaults for all the required parameters are defined in the code.
 However, we might sometimes want to skip creating an object if the corresponding key is omitted from the configuration.
 This functionality is provided by the :meth:`maybe_configure() <Configuration.maybe_configure>` method, which returns :code:`None` if the configuration value is missing.
+
+There is also :meth:`maybe_bind() <Configuration.maybe_bind>`, which works analogously (see :ref:`Argument binding` above).
 
 Required parameters
 ~~~~~~~~~~~~~~~~~~~

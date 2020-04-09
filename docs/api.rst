@@ -19,4 +19,6 @@ API Reference
 
    .. automethod:: get
 
+   .. automethod:: get_unused_keys
+
 .. autoclass:: ConfigurationError
