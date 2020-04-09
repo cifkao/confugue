@@ -1,7 +1,7 @@
 Confugue
 ========
 
-|pypi-version| |build-status| |docs-status|
+|pypi-package| |build-status| |docs-status|
 
 Confugue is a hierarchical configuration framework for Python. It provides a wrapper class for nested configuration dictionaries (usually loaded from YAML files), which can be used to easily configure complicated object hierarchies.
 
@@ -85,6 +85,6 @@ Sacred
 .. |docs-status| image:: https://readthedocs.org/projects/confugue/badge/?version=latest
    :target: https://confugue.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
-.. |pypi-version| image:: https://badge.fury.io/py/confugue.svg
+.. |pypi-package| image:: https://badge.fury.io/py/confugue.svg?
    :target: https://pypi.org/project/confugue/
    :alt: PyPI Package
