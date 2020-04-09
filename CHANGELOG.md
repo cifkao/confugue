@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.0]
 
 ### Added
 - `get_unused_keys` method.
@@ -9,4 +9,6 @@
 ### Fixed
 - Handle all exceptions raised while calling the callable (by mistake, only some were being handled) and use proper exception chaining.
 
-[unreleased]: https://github.com/cifkao/confugue/compare/v0.0.1...HEAD
+
+[0.1.0]: https://github.com/cifkao/confugue/compare/v0.0.1...v0.1.0
+[unreleased]: https://github.com/cifkao/confugue/compare/v0.1.0...HEAD
