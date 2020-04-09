@@ -212,20 +212,14 @@ class Configuration:
             return config_val
         config_dict = dict(config_val)  # Make a copy of the dict
 
-        try:
-            # The 'class' key overrides the constructor passed by the caller (if any).
-            if not constructor or 'class' in config_dict:
-                try:
-                    constructor = config_dict['class']
-                except KeyError:
-                    raise ConfigurationError('Error while configuring {}: No constructor (class) '
-                                             'specified'.format(self._name_repr)) from None
-
+        # The 'class' key overrides the constructor passed by the caller (if any).
+        if not constructor or 'class' in config_dict:
+            try:
+                constructor = config_dict['class']
                 del config_dict['class']
-        except Exception as e:
-            raise ConfigurationError('{} while configuring {}: {}'.format(
-                type(e).__name__, self._name_repr, e
-            )).with_traceback(sys.exc_info()[2]) from None
+            except KeyError:
+                raise ConfigurationError('Error while configuring {}: No constructor (class) '
+                                         'specified'.format(self._name_repr)) from None
 
         # Check for missing required parameters.
         missing_keys = [repr(k) for k, v in kwargs.items()
@@ -252,11 +246,13 @@ class Configuration:
                     result = constructor(**kwargs)
                 self._used_keys.update(config_dict.keys())
             return result
-        except TypeError as e:
-            raise ConfigurationError('{} while configuring {} ({!r}): {}'.format(
+        except ConfigurationError:
+            raise
+        except Exception as e:
+            raise ConfigurationError('{} while configuring {} ({!r})'.format(
                 type(e).__name__, self._name_repr,
-                getattr(constructor, _WRAPPED_ATTR, constructor), e
-            )).with_traceback(sys.exc_info()[2]) from None
+                getattr(constructor, _WRAPPED_ATTR, constructor)
+            )) from e
 
     def __getitem__(self, key):
         """Return a :class:`Configuration` object corresponding to the given key.
