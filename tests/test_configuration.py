@@ -129,7 +129,7 @@ def test_required():
 def test_get_unused_keys():
     @configurable
     def f(a, b, *, _cfg):
-        _cfg['g'].configure(g)
+        _cfg['g'].configure()
         _cfg['g_list'].configure_list(g)
 
     @configurable
@@ -139,7 +139,7 @@ def test_get_unused_keys():
     cfg = Configuration({
         'a': 1, 'b': 2,
         'unused': {'a': 1, 'b': 2},
-        'g': {'a': 1, 'unused': 2},
+        'g': {'class': g, 'a': 1, 'unused': 2},
         'g_list': [{'a': 1, 'unused': 2}],
         'x': {'a': 1, 'unused': {'b': 2}},
     })

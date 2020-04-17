@@ -217,6 +217,7 @@ class Configuration:
             try:
                 constructor = config_dict['class']
                 del config_dict['class']
+                self._used_keys.add('class')
             except KeyError:
                 raise ConfigurationError('Error while configuring {}: No constructor (class) '
                                          'specified'.format(self._name_repr)) from None
