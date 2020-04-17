@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+- 'class' key being incorrectly reported as unused ([#3](https://github.com/cifkao/confugue/issues/3)).
+
 ## [0.1.0]
 
 ### Added
