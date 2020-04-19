@@ -2,16 +2,25 @@ Deep Learning Quick Start Guide
 -------------------------------
 .. currentmodule:: confugue
 
-.. Tip:: Confugue is absolutely not limited to deep learning applications.
-   Python users unfamiliar with deep learning should check out the :doc:`General Guide <general-guide>`.
-
 This section is intended as a quick start guide for deep learning users.
 It is based on PyTorch examples, but it should be easy to follow even for people working with other frameworks like TensorFlow.
+
+.. admonition:: Not into deep learning?
+
+   Confugue is absolutely not limited to machine learning applications.
+   Python users unfamiliar with deep learning should check out the :doc:`General Guide <general-guide>`.
+
+.. Tip:: This guide is available as a `Jupyter notebook <https://github.com/cifkao/confugue/blob/master/docs/pytorch_tutorial.ipynb>`_.
+   |colab-link|
+
+   .. |colab-link| image:: https://colab.research.google.com/assets/colab-badge.svg
+      :target: https://colab.research.google.com/github/cifkao/confugue/blob/master/docs/pytorch_tutorial.ipynb
+      :alt: Open in Colab
 
 Basic PyTorch example
 ~~~~~~~~~~~~~~~~~~~~~
 We are going to start with a basic PyTorch model, adapted from the `CIFAR-10 tutorial <https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html>`_.
-First, let's see how we would code the model *without* using Confugue::
+First, let's see what the model looks like *without* using Confugue::
 
    from torch import nn
 
