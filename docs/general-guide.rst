@@ -87,7 +87,8 @@ Now, given the following :file:`config2.yaml`...
    Egg 0
 
 
-.. Note::
+.. admonition:: How does it work?
+
   When we call :code:`config.configure(main)`, the following happens:
 
   - The :code:`foo` value defined in the config file gets passed as an argument to :code:`main()`. The values :code:`ham1` and :code:`ham2`, however, do not get passed as arguments since the function does not accept them, and instead become available via :code:`_cfg`.
