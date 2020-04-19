@@ -2,6 +2,8 @@ More Features
 -------------
 .. currentmodule:: confugue
 
+.. _Overriding the callable:
+
 Overriding the callable
 ~~~~~~~~~~~~~~~~~~~~~~~
 In addition to overriding the arguments of a callable (function or class), the configuaration file may also replace the callable itself using the :code:`class` key.

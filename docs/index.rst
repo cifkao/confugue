@@ -1,7 +1,6 @@
 Confugue
 ========
 
-
 Introduction
 ------------
 
@@ -57,6 +56,7 @@ Contents
    Introduction <self>
 
 .. toctree::
+   :includehidden:
    :maxdepth: 2
 
    getting-started
