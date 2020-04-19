@@ -28,13 +28,13 @@ Sometimes we might want to create a list of objects of the same type, with argum
 This can be useful for example when creating a deep neural network with layers of different sizes.
 In this situation, we can use the :meth:`configure_list() <Configuration.configure_list>` method, like so::
 
-   _cfg['fc_layers'].configure_list(tf.keras.layers.Dense, activation='relu')
+   _cfg['dense_layers'].configure_list(tf.keras.layers.Dense, activation='relu')
 
 The configuration file might then look like this:
 
 .. code-block:: yaml
 
-   fc_layers:
+   dense_layers:
      - units: 100
      - units: 150
      - units: 2
@@ -47,7 +47,7 @@ Argument binding
 It is sometimes useful to pre-configure a callable without actually calling it, for example if we intend to call it multiple times or want to supply additional arguments later.
 This can be achieved using the :meth:`bind() <Configuration.bind>` method, e.g.::
 
-  Dense = _cfg['data_loading'].bind(tf.keras.layers.Dense, activation='relu')
+  Dense = _cfg['dense_layer'].bind(tf.keras.layers.Dense, activation='relu')
   dense1 = Dense()  # parameters supplied by configuration
   dense2 = Dense(use_bias=False, activation=None)  # overrides configuration
 
