@@ -84,20 +84,23 @@ Now, given the following :file:`config2.yaml`...
    Ham 3
    Egg 0
 
-What happens when we call :code:`config.configure(main)` is the following:
 
-- The :code:`foo` value defined in the config file gets passed as an argument to :code:`main()`. The values :code:`ham1` and :code:`ham2`, however, do not get passed as arguments since the function does not accept them, and instead become available via :code:`_cfg`.
-- :code:`_cfg['ham1']` retrieves the :code:`ham1` config dictionary and wraps it in a new :class:`Configuration` object, ready to configure a new instance of :code:`Ham`.
-- Similarly, inside :code:`Ham`'s constructor, the value under :code:`ham1 -> egg` is retrieved and used to configure an :code:`Egg` instance.
+.. Note::
+  When we call :code:`config.configure(main)`, the following happens:
 
-Notice how :code:`self._cfg['egg'].configure(Egg, y=0)` still works in the second case, even though there is no :code:`ham2 -> egg` key in the config file.
-This is because :code:`self._cfg['egg']` returns an empty :class:`Configuration` object, which will happily instantiate :code:`Egg` as long as a default value for :code:`y` is provided in the code.
+  - The :code:`foo` value defined in the config file gets passed as an argument to :code:`main()`. The values :code:`ham1` and :code:`ham2`, however, do not get passed as arguments since the function does not accept them, and instead become available via :code:`_cfg`.
+  - :code:`_cfg['ham1']` retrieves the :code:`ham1` config dictionary and wraps it in a new :class:`Configuration` object, ready to configure a new instance of :code:`Ham`.
+  - Similarly, inside :code:`Ham`'s constructor, the value under :code:`ham1 -> egg` is retrieved and used to configure an :code:`Egg` instance.
 
-Other things to keep in mind:
+  Notice how :code:`self._cfg['egg'].configure(Egg, y=0)` works even though there is no :code:`ham2 -> egg` key in the config file.
+  This is because :code:`self._cfg['egg']` returns an empty :class:`Configuration` object, which will happily instantiate :code:`Egg` as long as a default value for :code:`y` is provided in the code.
 
-- When calling a configurable, Confugue looks at its function signature and matches the configuration keys against it. Only the matching keys are passed as arguments (unless the signature contains a :code:`**kwargs` argument, in which case all keys will be used).
-  This behavior can be changed by passing a list of configurable parameters as the :code:`params` argument of the :func:`@configurable <configurable>` decorator.
-- A configurable can still be called normally (rather than using :meth:`configure <Configuration.configure>`). :code:`_cfg` will be automatically set to a default configuration object, which will behave as if the configuration file was empty.
-- The :func:`@configurable <configurable>` decorator is necessary only if the function or class needs to access its configuration (:code:`_cfg`).
+.. admonition:: Keep In Mind
+  :class: tip
+
+  - When calling a configurable, Confugue looks at its function signature and matches the configuration keys against it. Only the matching keys are passed as arguments (unless the signature contains a :code:`**kwargs` argument, in which case all keys will be used).
+    This behavior can be changed by passing a list of configurable parameters as the :code:`params` argument of the :func:`@configurable <configurable>` decorator.
+  - A configurable can still be called normally (rather than using :meth:`configure <Configuration.configure>`). :code:`_cfg` will be automatically set to a default configuration object, which will behave as if the configuration file was empty.
+  - The :func:`@configurable <configurable>` decorator is necessary only if the function or class needs to access its configuration (:code:`_cfg`).
 
 The next section briefly discusses some advanced features.
