@@ -114,7 +114,7 @@ We are now ready to load the file into a Configuration object and use it to conf
      (act): ReLU()
    )
 
-.. Tip:: Instead of loading a YAML file, one can use any configuration dictionary by directly calling :code:`Configurable(cfg_dict)`.
+.. Tip:: Instead of loading a YAML file, one can use any configuration dictionary by directly calling :code:`Configuration(cfg_dict)`.
 
 Nested configurables
 ~~~~~~~~~~~~~~~~~~~~

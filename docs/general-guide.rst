@@ -105,6 +105,6 @@ Now, given the following :file:`config2.yaml`...
     This behavior can be changed by passing a list of configurable parameters as the :code:`params` argument of the :func:`@configurable <configurable>` decorator.
   - A configurable can still be called normally (rather than using :meth:`configure <Configuration.configure>`). :code:`_cfg` will be automatically set to a default configuration object, which will behave as if the configuration file was empty.
   - The :func:`@configurable <configurable>` decorator is necessary only if the function or class needs to access its configuration (:code:`_cfg`).
-  - Instead of loading a YAML file, one can use any other configuration dictionary by directly calling :code:`Configurable(cfg_dict)`.
+  - Instead of loading a YAML file, one can use any other configuration dictionary by directly calling :code:`Configuration(cfg_dict)`.
 
 .. seealso:: Advanced features are described in :doc:`more-features`.
