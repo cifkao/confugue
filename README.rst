@@ -50,7 +50,7 @@ Installation & Documentation
 
 The package is available from PyPI and can be installed with :code:`pip install confugue`.
 
-`Documentation <https://confugue.readthedocs.io/>`_:
+The `docs <https://confugue.readthedocs.io/>`_ include:
 
 - `Quick start guide <https://confugue.readthedocs.io/en/latest/deep-learning.html>`_ for deep learning users, available as a `Colab notebook <https://colab.research.google.com/github/cifkao/confugue/blob/master/docs/pytorch_tutorial.ipynb>`_
 - `General guide <https://confugue.readthedocs.io/en/latest/general-guide.html>`_ for Python users
