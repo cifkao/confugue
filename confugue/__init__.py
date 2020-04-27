@@ -446,8 +446,17 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
         # Check that the _cfg parameter is a keyword-only argument (if present)
         for arg_list in [argspec.args, argspec.varargs, argspec.varkw]:
             if arg_list and cfg_param in arg_list:
-                raise ValueError("'{}' parameter defined in {}, but is not keyword-only"
-                                 .format(cfg_param, wrapped))
+                # Include the correct signature in the error message.
+                signature_hint = ''
+                try:
+                    signature = inspect.signature(wrapped)
+                    params = [p for p in signature.parameters.values() if p.name != cfg_param]
+                    params.append(inspect.Parameter(cfg_param, inspect.Parameter.KEYWORD_ONLY))
+                    signature = signature.replace(parameters=params)
+                    signature_hint = ' Use: {}{}'.format(wrapped.__name__, signature)
+                finally:
+                    raise ValueError("'{}' parameter defined in {}, but is not keyword-only.{}"
+                                     .format(cfg_param, wrapped, signature_hint))
 
         @wrapt.decorator(adapter=_update_configurable_argspec(argspec, cfg_param))
         def _configurable(wrapped, instance, args, kwargs):

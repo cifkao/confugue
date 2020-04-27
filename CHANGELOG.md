@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+- Include the correct function signature in the error message when `_cfg` is not keyword-only.
+
 ## [0.1.1]
 
 ### Fixed
