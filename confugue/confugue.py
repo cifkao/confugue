@@ -3,8 +3,8 @@
 import functools
 import inspect
 import logging
-from typing import (Any, Callable, Dict, Hashable, IO, Iterator, List, Optional, Set,
-                    Tuple, Type, TypeVar, Union, cast, overload)
+from typing import (Any, BinaryIO, Callable, Dict, Hashable, Iterator, List, Optional, Set,
+                    TextIO, Tuple, Type, TypeVar, Union, cast, overload)
 import warnings
 
 import wrapt  # type: ignore
@@ -417,7 +417,7 @@ class Configuration:
         return key if isinstance(key, str) else '[{}]'.format(key)
 
     @classmethod
-    def from_yaml(cls: Type[CfgVar], stream: Union[str, bytes, IO[str], IO[bytes]],
+    def from_yaml(cls: Type[CfgVar], stream: Union[str, bytes, TextIO, BinaryIO],
                   loader: Any = yaml.Loader) -> CfgVar:
         """Create a configuration from YAML.
 
@@ -434,7 +434,7 @@ class Configuration:
         return cls(yaml.load(stream, Loader=loader))
 
     @classmethod
-    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, bytes, IO[str], IO[bytes]],
+    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, bytes, TextIO, BinaryIO],
                        loader: Any = yaml.Loader) -> CfgVar:
         """Create a configuration from a YAML file.
 

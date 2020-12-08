@@ -5,20 +5,25 @@ API Reference
 .. autodecorator:: configurable(\*, params=ALL, cfg_property='_cfg', cfg_param='_cfg')
 
 .. autoclass:: Configuration
-   :members: from_yaml, from_yaml_file
 
-   .. automethod:: configure(constructor=None, /, \*\*kwargs)
+   .. automethod:: configure(constructor: Optional[Callable] = None, /, \*\*kwargs) -> Any
 
-   .. automethod:: maybe_configure(constructor=None, /, \*\*kwargs)
+   .. automethod:: maybe_configure(constructor: Optional[Callable] = None, /, \*\*kwargs) -> Any
 
-   .. automethod:: configure_list(constructor=None, /, \*\*kwargs)
+   .. automethod:: configure_list(constructor: Optional[Callable] = None, /, \*\*kwargs) -> Optional[List]
 
-   .. automethod:: bind(constructor=None, /, \*\*kwargs)
+   .. automethod:: bind(constructor: Optional[Callable] = None, /, \*\*kwargs) -> Optional[Callable]
 
-   .. automethod:: maybe_bind(constructor=None, /, \*\*kwargs)
+   .. automethod:: maybe_bind(constructor: Optional[Callable] = None, /, \*\*kwargs) -> Optional[Callable]
 
    .. automethod:: get
 
    .. automethod:: get_unused_keys
 
+   .. automethod:: from_yaml(stream: str | bytes | TextIO | BinaryIO, loader=yaml.Loader) -> Configuration
+
+   .. automethod:: from_yaml_file(stream: str | bytes | TextIO | BinaryIO, loader=yaml.Loader) -> Configuration
+
 .. autoclass:: ConfigurationError
+
+.. autoclass:: ConfigurationWarning
