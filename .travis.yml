@@ -5,31 +5,31 @@ jobs:
     - name: 'Pylint'
       install:
         - pip install .
-        - pip install pylint pylint-quotes
+        - pip install pylint==2.6.0 pylint-quotes==0.2.1
       script:
         - pylint confugue
     - name: 'Mypy'
       install:
         - pip install .
-        - pip install mypy
+        - pip install mypy==0.790
       script:
         - mypy confugue
     - name: 'Unit tests (Python 3.5)'
       python: '3.5'
       install:
         - pip install .
-        - pip install pytest
+        - pip install pytest==6.1.2
       script:
         - pytest tests -rp --log-cli-level=DEBUG
     - name: 'Unit tests (Python 3.8)'
       install:
         - pip install .
-        - pip install pytest
+        - pip install pytest==6.1.2
       script:
         - pytest tests -rp --log-cli-level=DEBUG
     - name: 'Code style'
       install:
-        - pip install pycodestyle pydocstyle
+        - pip install pycodestyle==2.6.0 pydocstyle==5.1.1
       script:
         - pycodestyle confugue
         - pydocstyle confugue
