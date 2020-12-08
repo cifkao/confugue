@@ -3,8 +3,8 @@
 import functools
 import inspect
 import logging
-from typing import (Any, Callable, Dict, IO, Iterator, List, Optional, Set, Tuple, Type, TypeVar,
-                    Union, overload)
+from typing import (Any, Callable, Dict, Hashable, IO, Iterator, List, Optional, Set,
+                    Tuple, Type, TypeVar, Union, cast, overload)
 import warnings
 
 import wrapt  # type: ignore
@@ -31,7 +31,12 @@ _CFG_PARAM_ATTR = '__confugue_cfg_param'
 _WRAPPED_ATTR = '__confugue_wrapped'
 
 T = TypeVar('T')
-Cfg = TypeVar('Cfg', bound='Configuration')
+CfgVar = TypeVar('CfgVar', bound='Configuration')
+Fn = Callable[..., Any]
+FnVar = TypeVar('FnVar', bound=Fn)
+Args = Tuple[Any, ...]
+Kwargs = Dict[str, Any]
+ParamsSpec = Union[List[Any], _SpecialValue]
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +60,7 @@ class Configuration:
 
     REQUIRED = REQUIRED
 
-    def __init__(self, value=_MISSING_VALUE, name: str = '<root>'):
+    def __init__(self, value: Any = _MISSING_VALUE, name: str = '<root>'):
         self._wrapped = value
         self.name = name
         self.parent = None  # type: Optional[Configuration]
@@ -63,7 +68,7 @@ class Configuration:
         self._child_configs = {}  # type: Dict[Any, Configuration]
         self._used_keys = set()  # type: Set[Any]
 
-    def get(self, key=None, default=_NO_DEFAULT) -> Any:
+    def get(self, key: Hashable = None, default: Any = _NO_DEFAULT) -> Any:
         """Return an item from this configuration object (assuming the wrapped value is indexable).
 
         Returns:
@@ -76,7 +81,7 @@ class Configuration:
         """
         return self._get(key, default, mark_used=True)
 
-    def _get(self, key, default, mark_used: bool = False) -> Any:
+    def _get(self, key: Hashable, default: Any, mark_used: bool = False) -> Any:
         if self._wrapped is _MISSING_VALUE:
             if default is _NO_DEFAULT:
                 raise KeyError('Missing configuration value {}'.format(self._name_repr))
@@ -103,12 +108,12 @@ class Configuration:
             return default
 
     @overload
-    def configure(self, **kwargs) -> Any: ...
+    def configure(self, **kwargs: Any) -> Any: ...
 
     @overload
-    def configure(self, constructor: Optional[Callable], **kwargs) -> Any: ...
+    def configure(self, *constructor: Optional[Fn], **kwargs: Any) -> Any: ...
 
-    def configure(self, *args, **kwargs):
+    def configure(self, *args: Any, **kwargs: Any) -> Any:
         """Configure a callable using this configuration.
 
         Calls `constructor` with the keyword arguments specified in this configuration object or
@@ -130,12 +135,12 @@ class Configuration:
         return self._configure(args, kwargs)
 
     @overload
-    def bind(self, **kwargs) -> Optional[Callable]: ...
+    def bind(self, **kwargs: Any) -> Optional[Fn]: ...
 
     @overload
-    def bind(self, constructor: Optional[Callable], **kwargs) -> Optional[Callable]: ...
+    def bind(self, *constructor: Optional[Fn], **kwargs: Any) -> Optional[Fn]: ...
 
-    def bind(self, *args, **kwargs):
+    def bind(self, *args: Any, **kwargs: Any) -> Optional[Fn]:
         """Configure a callable without calling it.
 
         Like :meth:`configure`, but instead of calling `constructor` directly, it returns a new
@@ -151,12 +156,12 @@ class Configuration:
         return self._configure(args, kwargs, bind_only=True)
 
     @overload
-    def maybe_configure(self, **kwargs) -> Any: ...
+    def maybe_configure(self, **kwargs: Any) -> Any: ...
 
     @overload
-    def maybe_configure(self, constructor: Optional[Callable], **kwargs) -> Any: ...
+    def maybe_configure(self, *constructor: Optional[Fn], **kwargs: Any) -> Any: ...
 
-    def maybe_configure(self, *args, **kwargs):
+    def maybe_configure(self, *args: Any, **kwargs: Any) -> Any:
         """Configure a callable only if the configuration is present.
 
         Like :meth:`configure`, but returns `None` if the configuration is missing.
@@ -170,12 +175,12 @@ class Configuration:
         return self._configure(args, kwargs, maybe=True)
 
     @overload
-    def maybe_bind(self, **kwargs) -> Optional[Callable]: ...
+    def maybe_bind(self, **kwargs: Any) -> Optional[Fn]: ...
 
     @overload
-    def maybe_bind(self, constructor: Optional[Callable], **kwargs) -> Optional[Callable]: ...
+    def maybe_bind(self, *constructor: Optional[Fn], **kwargs: Any) -> Optional[Fn]: ...
 
-    def maybe_bind(self, *args, **kwargs):
+    def maybe_bind(self, *args: Any, **kwargs: Any) -> Optional[Fn]:
         """Configure a callable without calling it, but only if the configuration is present.
 
         Like :meth:`bind`, but returns `None` if the configuration is missing.
@@ -188,7 +193,7 @@ class Configuration:
         """
         return self._configure(args, kwargs, maybe=True, bind_only=True)
 
-    def _configure(self, args: tuple, kwargs: dict, maybe: bool = False,
+    def _configure(self, args: Args, kwargs: Kwargs, maybe: bool = False,
                    bind_only: bool = False) -> Any:
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
@@ -205,12 +210,13 @@ class Configuration:
         return self._configure_impl(config_val, constructor, kwargs, bind_only)
 
     @overload
-    def configure_list(self, **kwargs) -> Optional[List]: ...
+    def configure_list(self, **kwargs: Any) -> Optional[List[Any]]: ...
 
     @overload
-    def configure_list(self, constructor: Optional[Callable], **kwargs) -> Optional[List]: ...
+    def configure_list(
+        self, *constructor: Optional[Fn], **kwargs: Any) -> Optional[List[Any]]: ...
 
-    def configure_list(self, *args, **kwargs):
+    def configure_list(self, *args: Any, **kwargs: Any) -> Optional[List[Any]]:
         """Configure a list of objects.
 
         This method should be used if the configuration is expected to be a list. Every item of
@@ -235,8 +241,8 @@ class Configuration:
         return [self[i]._configure_impl(config_item, constructor, kwargs)  # pylint: disable=protected-access
                 for i, config_item in enumerate(config_val)]
 
-    def _configure_impl(self, config_val, constructor: Optional[Callable], kwargs: dict,
-                        bind_only: bool = False):
+    def _configure_impl(self, config_val: Any, constructor: Optional[Fn], kwargs: Kwargs,
+                        bind_only: bool = False) -> Any:
         # If config_value is not a dictionary, we just use the value as it is, unless the caller
         # has specified a constructor (in which case we raise an error).
         if type(config_val) is not dict:
@@ -297,7 +303,7 @@ class Configuration:
                 getattr(constructor, _WRAPPED_ATTR, constructor)
             )) from e
 
-    def __getitem__(self, key) -> Any:
+    def __getitem__(self, key: Hashable) -> Any:
         """Return a :class:`Configuration` object corresponding to the given key.
 
         If the key is missing in the wrapped object, a :class:`Configuration` object with a special
@@ -311,7 +317,7 @@ class Configuration:
             self._child_configs[key] = cfg
         return self._child_configs[key]
 
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(self, key: Hashable, value: Any) -> None:
         try:
             self._wrapped[key] = value
         except TypeError as e:
@@ -319,7 +325,7 @@ class Configuration:
         if key in self._child_configs:
             setattr(self._child_configs[key], '_wrapped', value)
 
-    def __delitem__(self, key) -> None:
+    def __delitem__(self, key: Hashable) -> None:
         try:
             del self._wrapped[key]
         except (KeyError, IndexError, TypeError) as e:
@@ -327,7 +333,7 @@ class Configuration:
         if key in self._child_configs:
             del self._child_configs[key]
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[Any]:
         try:
             return iter(self._wrapped)
         except TypeError as e:
@@ -339,7 +345,7 @@ class Configuration:
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
-    def __contains__(self, key) -> bool:
+    def __contains__(self, key: Hashable) -> bool:
         try:
             return self._wrapped is not _MISSING_VALUE and key in self._wrapped
         except TypeError as e:
@@ -353,7 +359,7 @@ class Configuration:
             repr(self._wrapped) if self._wrapped is not _MISSING_VALUE else '<missing>',
             ', name={}'.format(self._name_repr) if not self._is_special_name else '')
 
-    def get_unused_keys(self, warn: bool = False) -> List:
+    def get_unused_keys(self, warn: bool = False) -> List[Hashable]:
         """Recursively find keys that were never accessed.
 
         Args:
@@ -381,9 +387,10 @@ class Configuration:
                 unused_keys.append(self._get_key_name(key))
 
         if unused_keys and warn:
-            warnings.warn('Found {} unused keys: {}'.format(len(unused_keys),
-                                                            ', '.join(unused_keys)),
-                          ConfigurationWarning)
+            warnings.warn(
+                'Found {} unused keys: {}'.format(
+                    len(unused_keys), ', '.join(str(k) for k in unused_keys)),
+                ConfigurationWarning)
 
         return unused_keys
 
@@ -404,13 +411,14 @@ class Configuration:
     def _is_special_name(self) -> bool:
         return self.name.startswith('<')
 
-    def _get_key_name(self, key) -> str:
+    def _get_key_name(self, key: Hashable) -> str:
         if not self._is_special_name:
             return ('{}.{}' if isinstance(key, str) else '{}[{}]').format(self.name, key)
         return key if isinstance(key, str) else '[{}]'.format(key)
 
     @classmethod
-    def from_yaml(cls: Type[Cfg], stream: Union[str, IO], loader=yaml.Loader) -> Cfg:
+    def from_yaml(cls: Type[CfgVar], stream: Union[str, bytes, IO[str], IO[bytes]],
+                  loader: Any = yaml.Loader) -> CfgVar:
         """Create a configuration from YAML.
 
         The configuration is loaded using PyYAML's (potentially unsafe) :class:`Loader` by default.
@@ -426,7 +434,8 @@ class Configuration:
         return cls(yaml.load(stream, Loader=loader))
 
     @classmethod
-    def from_yaml_file(cls: Type[Cfg], stream: Union[str, IO], loader=yaml.Loader) -> Cfg:
+    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, bytes, IO[str], IO[bytes]],
+                       loader: Any = yaml.Loader) -> CfgVar:
         """Create a configuration from a YAML file.
 
         The configuration is loaded using PyYAML's (potentially unsafe) :class:`Loader` by default.
@@ -448,20 +457,23 @@ class Configuration:
 
 # @configurable - a decorator
 @overload
-def configurable(wrapped: Callable) -> Callable: ...
+def configurable(wrapped: FnVar) -> FnVar: ...
 
 
 # @configurable(...) - a function that returns a decorator
 @overload
 def configurable(
-    *,
-    params: Union[list, _SpecialValue] = ...,
+    *, params: ParamsSpec = ...,
     cfg_property: str = ...,
-    cfg_param: str = ...) -> Callable[[Callable], Callable]: ...
+    cfg_param: str = ...) -> Callable[[FnVar], FnVar]: ...
 
 
 # pylint: disable=missing-param-doc,missing-return-doc
-def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_cfg'):  # noqa: D417
+def configurable(
+        wrapped: Optional[FnVar] = None, *,
+        params: ParamsSpec = ALL,
+        cfg_property: str = '_cfg',
+        cfg_param: str = '_cfg') -> Union[FnVar, Callable[[FnVar], FnVar]]:  # noqa: D417
     """A decorator that makes a function or a class configurable.
 
     The decorator may be used with or without parentheses (i.e. both :code:`@configurable`
@@ -493,9 +505,10 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
 
     default_cfg = Configuration(_MISSING_VALUE, name='<default>')
 
+    wrapper = wrapped
+
     if inspect.isclass(wrapped):
-        _add_cfg_property(wrapped, cfg_property, default_cfg)
-        wrapper = wrapped
+        _add_cfg_property(cast(Type, wrapped), cfg_property, default_cfg)
     else:
         argspec = inspect.getfullargspec(wrapped)
 
@@ -514,13 +527,13 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
                     raise ValueError("'{}' parameter defined in {}, but is not keyword-only.{}"
                                      .format(cfg_param, wrapped, signature_hint))
 
-        @wrapt.decorator(adapter=_update_configurable_argspec(argspec, cfg_param))
-        def _configurable(wrapped, instance, args, kwargs):
+        @wrapt.decorator(adapter=_update_configurable_argspec(argspec, cfg_param))  # type: ignore
+        def _configurable(wrapped, instance, args, kwargs):  # type: ignore
             del instance
             if argspec.kwonlyargs and cfg_param in argspec.kwonlyargs:
                 kwargs[cfg_param] = default_cfg
-            return wrapped(*args, **kwargs)
-        wrapper = _configurable(wrapped)  # pylint: disable=no-value-for-parameter
+            return wrapped(*args, **kwargs)  # type: ignore
+        wrapper = cast(FnVar, _configurable(wrapped))  # pylint: disable=no-value-for-parameter
         setattr(wrapper, _CFG_PARAM_ATTR, cfg_param if cfg_param in argspec.kwonlyargs else None)
 
     setattr(wrapper, _WRAPPED_ATTR, wrapped)
@@ -530,9 +543,9 @@ def configurable(wrapped=None, *, params=ALL, cfg_property='_cfg', cfg_param='_c
 # pylint: enable=missing-param-doc,missing-return-doc
 
 
-def _add_cfg_property(cls, name: str, value: Configuration) -> None:
+def _add_cfg_property(cls: Type[T], name: str, value: Configuration) -> None:
     """Add the `_cfg` property to a class."""
-    def _cfg_getter(self) -> Configuration:
+    def _cfg_getter(self: T) -> Configuration:
         if not hasattr(self, _CFG_ATTR):
             setattr(self, _CFG_ATTR, value)
         return getattr(self, _CFG_ATTR)
@@ -540,7 +553,8 @@ def _add_cfg_property(cls, name: str, value: Configuration) -> None:
     setattr(cls, name, property(_cfg_getter))
 
 
-def _update_configurable_argspec(argspec: inspect.FullArgSpec, cfg_param: str):
+def _update_configurable_argspec(
+        argspec: inspect.FullArgSpec, cfg_param: str) -> inspect.FullArgSpec:
     """Return an updated :class:`FullArgSpec` for a configurable function."""
     return argspec._replace(
         kwonlyargs=argspec.kwonlyargs and [arg for arg in argspec.kwonlyargs if arg != cfg_param],
@@ -550,8 +564,9 @@ def _update_configurable_argspec(argspec: inspect.FullArgSpec, cfg_param: str):
                                              if k != cfg_param})
 
 
-def _construct_configurable(x, kwargs: dict, config_dict: dict, cfg: Configuration,
-                            bind_only: bool) -> Tuple[Callable, Set[str]]:
+def _construct_configurable(
+        x: Callable[..., T], kwargs: Kwargs, config_dict: Dict[Any, Any], cfg: Configuration,
+        bind_only: bool) -> Tuple[Union[Callable[..., T], T], Set[str]]:
     # Determine which parameters to look for in the configuration
     param_names = getattr(x, _PARAMS_ATTR)
     if param_names is None:
@@ -574,9 +589,9 @@ def _construct_configurable(x, kwargs: dict, config_dict: dict, cfg: Configurati
 
     # Create a wrapper so that we can use functools.partial on it if bind_only is True
     @functools.wraps(x)
-    def wrapper(**kwargs):
+    def wrapper(**kwargs: Any) -> T:
         if inspect.isclass(x):
-            obj = x.__new__(x, **kwargs)
+            obj = x.__new__(x, **kwargs)  # type: ignore
             setattr(obj, _CFG_ATTR, cfg)
             obj.__init__(**kwargs)
             return obj
@@ -595,7 +610,8 @@ def _construct_configurable(x, kwargs: dict, config_dict: dict, cfg: Configurati
         return wrapper(**kwargs), param_names
 
 
-def _log_call(fn: Callable, args: tuple = None, kwargs: dict = None, bind_only: bool = False):
+def _log_call(fn: Fn, args: Optional[Args] = None, kwargs: Optional[Kwargs] = None,
+              bind_only: bool = False) -> None:
     args = args or ()
     kwargs = kwargs or {}
 
