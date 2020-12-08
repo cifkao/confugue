@@ -8,6 +8,12 @@ jobs:
         - pip install pylint pylint-quotes
       script:
         - pylint confugue
+    - name: 'Mypy'
+      install:
+        - pip install .
+        - pip install mypy
+      script:
+        - mypy confugue
     - name: 'Unit tests (Python 3.5)'
       python: '3.5'
       install:
