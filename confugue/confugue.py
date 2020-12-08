@@ -3,13 +3,10 @@
 import functools
 import inspect
 import logging
-import sys
 import warnings
 
 import wrapt
 import yaml
-
-from confugue.version import __version__
 
 
 class _SpecialValue:
