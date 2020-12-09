@@ -3,12 +3,17 @@
 import functools
 import inspect
 import logging
+import os
+import pprint
+import traceback
 from typing import (Any, BinaryIO, Callable, Dict, Hashable, Iterator, List, Optional, Set,
                     TextIO, Tuple, Type, TypeVar, Union, cast, overload)
 import warnings
 
 import wrapt  # type: ignore
 import yaml
+
+from confugue import utils
 
 
 class _SpecialValue:
@@ -199,6 +204,9 @@ class Configuration:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
 
+        if _is_interactive():
+            self._interactive_edit(constructor, kwargs, default={})
+
         if maybe and self._wrapped is _MISSING_VALUE:
             self._mark_used()
             return None
@@ -233,6 +241,9 @@ class Configuration:
         if len(args) > 1:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
+
+        if _is_interactive():
+            self._interactive_edit(constructor, kwargs, default=[])
 
         config_val = self._get(key=None, default=[], mark_used=True)
         if config_val is None:
@@ -415,6 +426,48 @@ class Configuration:
         if not self._is_special_name:
             return ('{}.{}' if isinstance(key, str) else '{}[{}]').format(self.name, key)
         return key if isinstance(key, str) else '[{}]'.format(key)
+
+    def _interactive_edit(self, constructor: Optional[Fn], kwargs: Kwargs, default: Any) -> None:
+        stack = traceback.extract_stack()
+        for i in range(len(stack) - 1, -1, -1):
+            if stack[i].filename != __file__:
+                print('\nConfiguration.{} called at:'.format(stack[i + 1].name))
+                print(*traceback.format_list([stack[i]]), sep='', end='')
+                break
+
+        print('Configuration key', self._name_repr)
+        defaults_msg = []
+        if constructor is not None:
+            try:
+                defaults_msg.append('Default constructor: {}{}'.format(
+                    constructor.__name__, inspect.signature(constructor)))
+            except (AttributeError, ValueError):
+                defaults_msg.append('Default constructor: {!r}'.format(constructor))
+        defaults_msg.append(
+            'Default kwargs: ' +
+            ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items()))
+        print(*defaults_msg, sep='\n')
+
+        if self._wrapped is _MISSING_VALUE:
+            print('Configuration missing')
+        else:
+            print('Configuration:', pprint.pformat(self._wrapped))
+
+        if input('Edit configuration [y/N]? ').lower() == 'y':
+            content = (
+                '# Editing {}\n'.format(self._name_repr) +
+                '\n'.join('# ' + l for l in defaults_msg) + '\n')
+            if self._wrapped is _MISSING_VALUE:
+                content += '# Please enter a YAML expression below\n\n'
+                content += yaml.dump(default)
+            else:
+                content += '# Please edit the YAML expression below\n\n'
+                content += yaml.dump(self._wrapped)
+
+            try:
+                self._wrapped = utils.edit_yaml(content)
+            except utils.EditError:
+                pass
 
     @classmethod
     def from_yaml(cls: Type[CfgVar], stream: Union[str, bytes, TextIO, BinaryIO],
@@ -610,20 +663,29 @@ def _construct_configurable(
         return wrapper(**kwargs), param_names
 
 
-def _log_call(fn: Fn, args: Optional[Args] = None, kwargs: Optional[Kwargs] = None,
-              bind_only: bool = False) -> None:
+def _format_call(fn: Fn, args: Optional[Args] = None, kwargs: Optional[Kwargs] = None) -> str:
     args = args or ()
     kwargs = kwargs or {}
 
     try:
-        bound_args = inspect.signature(fn).bind(*args, **kwargs).arguments
+        bound_args = inspect.signature(fn).bind_partial(*args, **kwargs).arguments
         formatted_args = ['{}={!r}'.format(k, v) for k, v in bound_args.items()]
     except (TypeError, ValueError):
         formatted_args = ([repr(a) for a in args] +
                           ['{}={!r}'.format(k, v) for k, v in kwargs.items()])
 
-    logger.debug('{} {}({})'.format('Binding' if bind_only else 'Calling',
-                                    fn.__name__, ', '.join(formatted_args)))
+    return '{}({})'.format(fn.__name__, ', '.join(formatted_args))
+
+
+def _log_call(fn: Fn, args: Optional[Args] = None, kwargs: Optional[Kwargs] = None,
+              bind_only: bool = False) -> None:
+
+    logger.debug('{} {}'.format('Binding' if bind_only else 'Calling',
+                                _format_call(fn, args, kwargs)))
+
+
+def _is_interactive() -> bool:
+    return bool(os.environ.get('CONFUGUE_INTERACTIVE', False))
 
 
 class ConfigurationError(Exception):
