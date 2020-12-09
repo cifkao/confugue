@@ -456,7 +456,7 @@ class Configuration:
         if input('Edit configuration [y/N]? ').lower() == 'y':
             content = (
                 '# Editing {}\n'.format(self._name_repr) +
-                '\n'.join('# ' + l for l in defaults_msg) + '\n')
+                '\n'.join('# ' + line for line in defaults_msg) + '\n')
             if self._wrapped is _MISSING_VALUE:
                 content += '# Please enter a YAML expression below\n\n'
                 content += yaml.dump(default)
