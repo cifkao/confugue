@@ -150,3 +150,13 @@ def test_get_unused_keys():
     with pytest.warns(ConfigurationWarning):
         unused_keys = cfg.get_unused_keys(warn=True)
     assert set(unused_keys) == {'unused', 'g.unused', 'g_list[0].unused', 'x.unused'}
+
+
+def test_get_unused_keys_with_all_children_used():
+    cfg = Configuration({
+        'a': {'x': 1, 'y': 2}
+    })
+    cfg['a']['x'].get()
+    cfg['a']['y'].get()
+
+    assert cfg.get_unused_keys() == []

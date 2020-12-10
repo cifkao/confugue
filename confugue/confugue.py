@@ -337,7 +337,9 @@ class Configuration:
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
         if key in self._child_configs:
-            setattr(self._child_configs[key], '_wrapped', value)
+            del self._child_configs[key]
+        if key in self._used_keys:
+            self._used_keys.remove(key)
 
     def __delitem__(self, key: Hashable) -> None:
         try:
@@ -346,6 +348,8 @@ class Configuration:
             raise type(e)('{}: {}'.format(self.name, e)) from None
         if key in self._child_configs:
             del self._child_configs[key]
+        if key in self._used_keys:
+            self._used_keys.remove(key)
 
     def __iter__(self) -> Iterator[Any]:
         if _is_interactive():
@@ -398,14 +402,12 @@ class Configuration:
 
         unused_keys = []
         for key in keys:
-            child_unused_keys = []
-            # Report the unused keys in this subtree iff there are also some used keys.
+            # If there are some used keys in this subtree, report the unused ones.
             if (key in self._child_configs and
                     self._child_configs[key]._has_used_keys()):  # pylint: disable=protected-access
-                child_unused_keys = self._child_configs[key].get_unused_keys()
-            unused_keys.extend(child_unused_keys)
-            # Only report this key if no key from its subtree was reported above.
-            if not child_unused_keys and key not in self._used_keys:
+                unused_keys.extend(self._child_configs[key].get_unused_keys())
+            # If all keys in the subtree are unused and this key is also unused, report it.
+            elif key not in self._used_keys:
                 unused_keys.append(self._get_key_name(key))
 
         if unused_keys and warn:
