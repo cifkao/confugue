@@ -348,24 +348,32 @@ class Configuration:
             del self._child_configs[key]
 
     def __iter__(self) -> Iterator[Any]:
+        if _is_interactive():
+            self._interactive_edit(constructor=None, kwargs={})
         try:
             return iter(self._wrapped)
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
     def __len__(self) -> int:
+        if _is_interactive():
+            self._interactive_edit(constructor=None, kwargs={})
         try:
             return len(self._wrapped)
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
     def __contains__(self, key: Hashable) -> bool:
+        if _is_interactive():
+            self._interactive_edit(constructor=None, kwargs={})
         try:
             return self._wrapped is not _MISSING_VALUE and key in self._wrapped
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
     def __bool__(self) -> bool:
+        if _is_interactive():
+            self._interactive_edit(constructor=None, kwargs={})
         return self._wrapped is not _MISSING_VALUE and bool(self._wrapped)
 
     def __repr__(self) -> str:
