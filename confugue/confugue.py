@@ -84,6 +84,9 @@ class Configuration:
             IndexError: If the value is missing and no default was given.
             TypeError: If the wrapped object does not support indexing.
         """
+        if _is_interactive():
+            self._interactive_edit(constructor=None, kwargs={})
+
         return self._get(key, default, mark_used=True)
 
     def _get(self, key: Hashable, default: Any, mark_used: bool = False) -> Any:
@@ -427,7 +430,8 @@ class Configuration:
             return ('{}.{}' if isinstance(key, str) else '{}[{}]').format(self.name, key)
         return key if isinstance(key, str) else '[{}]'.format(key)
 
-    def _interactive_edit(self, constructor: Optional[Fn], kwargs: Kwargs, default: Any) -> None:
+    def _interactive_edit(self, constructor: Optional[Fn], kwargs: Kwargs,
+                          default: Any = _NO_DEFAULT) -> None:
         stack = traceback.extract_stack()
         for i in range(len(stack) - 1, -1, -1):
             if stack[i].filename != __file__:
@@ -443,10 +447,12 @@ class Configuration:
                     constructor.__name__, inspect.signature(constructor)))
             except (AttributeError, ValueError):
                 defaults_msg.append('Default constructor: {!r}'.format(constructor))
-        defaults_msg.append(
-            'Default kwargs: ' +
-            ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items()))
-        print(*defaults_msg, sep='\n')
+        if kwargs:
+            defaults_msg.append(
+                'Default kwargs: ' +
+                ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items()))
+        for line in defaults_msg:
+            print(line)
 
         if self._wrapped is _MISSING_VALUE:
             print('Configuration missing')
@@ -456,10 +462,11 @@ class Configuration:
         if input('Edit configuration [y/N]? ').lower() == 'y':
             content = (
                 '# Editing {}\n'.format(self._name_repr) +
-                '\n'.join('# ' + line for line in defaults_msg) + '\n')
+                ''.join('# {}\n'.format(line) for line in defaults_msg))
             if self._wrapped is _MISSING_VALUE:
                 content += '# Please enter a YAML expression below\n\n'
-                content += yaml.dump(default)
+                if default is not _NO_DEFAULT:
+                    content += yaml.dump(default)
             else:
                 content += '# Please edit the YAML expression below\n\n'
                 content += yaml.dump(self._wrapped)
