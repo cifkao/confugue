@@ -24,6 +24,8 @@ API Reference
 
    .. automethod:: from_yaml_file(stream: str | bytes | TextIO | BinaryIO, loader=yaml.Loader) -> Configuration
 
+.. autoclass:: interactive
+
 .. autoclass:: ConfigurationError
 
 .. autoclass:: ConfigurationWarning

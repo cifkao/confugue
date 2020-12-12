@@ -3,7 +3,6 @@
 import functools
 import inspect
 import logging
-import os
 import pprint
 import traceback
 from typing import (Any, BinaryIO, Callable, Dict, Hashable, Iterator, List, Optional, Set,
@@ -14,6 +13,7 @@ import wrapt  # type: ignore
 import yaml
 
 from confugue import utils
+from confugue.interactive_mode import get_interactive_mode
 
 
 class _SpecialValue:
@@ -46,6 +46,7 @@ ParamsSpec = Union[List[Any], _SpecialValue]
 logger = logging.getLogger(__name__)
 
 
+# pylint: disable=protected-access
 class Configuration:
     """Wrapper for nested configuration dictionaries or lists.
 
@@ -84,8 +85,7 @@ class Configuration:
             IndexError: If the value is missing and no default was given.
             TypeError: If the wrapped object does not support indexing.
         """
-        if _is_interactive():
-            self._interactive_edit(constructor=None, kwargs={})
+        self._interactive_edit(key=key)
 
         return self._get(key, default, mark_used=True)
 
@@ -111,7 +111,7 @@ class Configuration:
             return value
         except (KeyError, IndexError) as e:
             if default is _NO_DEFAULT:
-                raise type(e)("Missing configuration value '{}'".format(
+                raise type(e)('Missing configuration value {!r}'.format(
                     self._get_key_name(key))) from None
             return default
 
@@ -207,8 +207,7 @@ class Configuration:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
 
-        if _is_interactive():
-            self._interactive_edit(constructor, kwargs, default={})
+        self._interactive_edit(constructor, kwargs, default={})
 
         if maybe and self._wrapped is _MISSING_VALUE:
             self._mark_used()
@@ -245,14 +244,13 @@ class Configuration:
             raise TypeError('Expected at most 1 positional argument, got {}'.format(len(args)))
         constructor = args[0] if args else None
 
-        if _is_interactive():
-            self._interactive_edit(constructor, kwargs, default=[])
+        self._interactive_edit(constructor, kwargs, default=[])
 
         config_val = self._get(key=None, default=[], mark_used=True)
         if config_val is None:
             return None
 
-        return [self[i]._configure_impl(config_item, constructor, kwargs)  # pylint: disable=protected-access
+        return [self[i]._configure_impl(config_item, constructor, kwargs)
                 for i, config_item in enumerate(config_val)]
 
     def _configure_impl(self, config_val: Any, constructor: Optional[Fn], kwargs: Kwargs,
@@ -352,32 +350,28 @@ class Configuration:
             self._used_keys.remove(key)
 
     def __iter__(self) -> Iterator[Any]:
-        if _is_interactive():
-            self._interactive_edit(constructor=None, kwargs={})
+        self._interactive_edit()
         try:
             return iter(self._wrapped)
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
     def __len__(self) -> int:
-        if _is_interactive():
-            self._interactive_edit(constructor=None, kwargs={})
+        self._interactive_edit()
         try:
             return len(self._wrapped)
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
     def __contains__(self, key: Hashable) -> bool:
-        if _is_interactive():
-            self._interactive_edit(constructor=None, kwargs={})
+        self._interactive_edit()
         try:
             return self._wrapped is not _MISSING_VALUE and key in self._wrapped
         except TypeError as e:
             raise TypeError('{}: {}'.format(self.name, e)) from None
 
     def __bool__(self) -> bool:
-        if _is_interactive():
-            self._interactive_edit(constructor=None, kwargs={})
+        self._interactive_edit()
         return self._wrapped is not _MISSING_VALUE and bool(self._wrapped)
 
     def __repr__(self) -> str:
@@ -404,7 +398,7 @@ class Configuration:
         for key in keys:
             # If there are some used keys in this subtree, report the unused ones.
             if (key in self._child_configs and
-                    self._child_configs[key]._has_used_keys()):  # pylint: disable=protected-access
+                    self._child_configs[key]._has_used_keys()):
                 unused_keys.extend(self._child_configs[key].get_unused_keys())
             # If all keys in the subtree are unused and this key is also unused, report it.
             elif key not in self._used_keys:
@@ -420,12 +414,12 @@ class Configuration:
 
     def _has_used_keys(self) -> bool:
         return (len(self._used_keys) > 0 or
-                any(cfg._has_used_keys()  # pylint: disable=protected-access
+                any(cfg._has_used_keys()
                     for cfg in self._child_configs.values()))
 
     def _mark_used(self) -> None:
         if self.parent is not None and self._parent_key is not None:
-            self.parent._used_keys.add(self._parent_key)  # pylint: disable=protected-access
+            self.parent._used_keys.add(self._parent_key)
 
     @property
     def _name_repr(self) -> str:
@@ -440,8 +434,33 @@ class Configuration:
             return ('{}.{}' if isinstance(key, str) else '{}[{}]').format(self.name, key)
         return key if isinstance(key, str) else '[{}]'.format(key)
 
-    def _interactive_edit(self, constructor: Optional[Fn], kwargs: Kwargs,
-                          default: Any = _NO_DEFAULT) -> None:
+    def _interactive_edit(self, constructor: Optional[Fn] = None, kwargs: Optional[Kwargs] = None,
+                          key: Hashable = None, default: Any = _NO_DEFAULT) -> None:
+        # Decide whether to edit or not
+        mode = get_interactive_mode()
+        if mode == 'none':
+            return
+        if mode == 'missing' and self._wrapped is not _MISSING_VALUE:
+            return
+
+        if key is None:
+            self._interactive_edit_impl(constructor, kwargs, default, name=self.name)
+        else:
+            self[key]._interactive_edit_impl(constructor, kwargs, default,
+                                             name=self._get_key_name(key))
+
+    def _interactive_edit_impl(self, constructor: Optional[Fn], kwargs: Optional[Kwargs],
+                               default: Any, name: Optional[str]) -> None:
+        # If we are in an orphan node (parent's value is missing), edit the parent instead
+        if self.parent is not None and self.parent._wrapped is _MISSING_VALUE:
+            self.parent._interactive_edit_impl(constructor, kwargs, default, name)
+            try:
+                self._wrapped = self.parent._wrapped[self._parent_key]
+            except (TypeError, KeyError, IndexError):
+                pass
+            return
+
+        # Find out where we were called from
         stack = traceback.extract_stack()
         for i in range(len(stack) - 1, -1, -1):
             if stack[i].filename != __file__:
@@ -449,7 +468,11 @@ class Configuration:
                 print(*traceback.format_list([stack[i]]), sep='', end='')
                 break
 
-        print('Configuration key', self._name_repr)
+        # Print some useful information
+        is_orphan = (self.name != name)
+        print('Accessing: {}'.format(name) + (
+            (' (but {} missing)'.format(self._name_repr) if is_orphan else ' (missing)')
+            if self._wrapped is _MISSING_VALUE else ''))
         defaults_msg = []
         if constructor is not None:
             try:
@@ -465,13 +488,17 @@ class Configuration:
             print(line)
 
         if self._wrapped is _MISSING_VALUE:
-            print('Configuration missing')
+            # Need to say which config we are in, especially if we started from an orphan
+            prompt = 'Create missing configuration {}'.format(self._name_repr)
         else:
             print('Configuration:', pprint.pformat(self._wrapped))
+            prompt = 'Edit configuration'
 
-        if input('Edit configuration [y/N]? ').lower() == 'y':
+        if input(prompt + ' [y/N]? ').lower() == 'y':
             content = (
-                '# Editing {}\n'.format(self._name_repr) +
+                '# Editing {}{}\n'.format(
+                    self._name_repr,
+                    ' (accessed key: {!r})'.format(name) if is_orphan else '') +
                 ''.join('# {}\n'.format(line) for line in defaults_msg))
             if self._wrapped is _MISSING_VALUE:
                 content += '# Please enter a YAML expression below\n\n'
@@ -483,6 +510,8 @@ class Configuration:
 
             try:
                 self._wrapped = utils.edit_yaml(content)
+                if self.parent is not None:
+                    self.parent._wrapped[self._parent_key] = self._wrapped
             except utils.EditError:
                 pass
 
@@ -523,6 +552,7 @@ class Configuration:
                 return cls.from_yaml(f, loader)  # type: ignore
         else:
             return cls.from_yaml(stream, loader)  # type: ignore
+# pylint: enable=protected-access
 
 
 # @configurable - a decorator
@@ -699,10 +729,6 @@ def _log_call(fn: Fn, args: Optional[Args] = None, kwargs: Optional[Kwargs] = No
 
     logger.debug('{} {}'.format('Binding' if bind_only else 'Calling',
                                 _format_call(fn, args, kwargs)))
-
-
-def _is_interactive() -> bool:
-    return bool(os.environ.get('CONFUGUE_INTERACTIVE', False))
 
 
 class ConfigurationError(Exception):
