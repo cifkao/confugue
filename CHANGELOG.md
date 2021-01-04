@@ -11,6 +11,7 @@
 
 ### Fixed
 - Bugs in `get_unused_keys`.
+- Use `yaml.Loader` instead of `yaml.UnsafeLoader`, which is undocumented and was causing some problems.
 
 ## [0.1.1]
 
