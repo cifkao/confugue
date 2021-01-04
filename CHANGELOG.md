@@ -2,8 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+- Type hints.
+- Interactive editing mode.
+
 ### Changed
 - Include the correct function signature in the error message when `_cfg` is not keyword-only.
+
+### Fixed
+- Bugs in `get_unused_keys`.
 
 ## [0.1.1]
 
