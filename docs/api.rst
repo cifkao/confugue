@@ -22,7 +22,7 @@ API Reference
 
    .. automethod:: from_yaml(stream: str | bytes | TextIO | BinaryIO, loader=yaml.Loader) -> Configuration
 
-   .. automethod:: from_yaml_file(stream: str | bytes | TextIO | BinaryIO, loader=yaml.Loader) -> Configuration
+   .. automethod:: from_yaml_file(stream: str | TextIO | BinaryIO, loader=yaml.Loader) -> Configuration
 
 .. autoclass:: interactive
 

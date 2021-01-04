@@ -533,7 +533,7 @@ class Configuration:
         return cls(yaml.load(stream, Loader=loader))
 
     @classmethod
-    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, bytes, TextIO, BinaryIO],
+    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, TextIO, BinaryIO],
                        loader: Any = yaml.Loader) -> CfgVar:
         """Create a configuration from a YAML file.
 
