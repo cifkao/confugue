@@ -447,10 +447,9 @@ class Configuration:
             if mode == 'missing' and self._wrapped is not _MISSING_VALUE:
                 return
         else:
-
             if mode == 'missing' and self._wrapped is not _MISSING_VALUE:
                 try:
-                    self._wrapped[key]  # pylint: ignore=pointless-statement
+                    self._wrapped[key]  # pylint: disable=pointless-statement
                     return  # Key exists
                 except (KeyError, IndexError):
                     pass
