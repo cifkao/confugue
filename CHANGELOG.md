@@ -8,6 +8,7 @@
 
 ### Changed
 - Include the correct function signature in the error message when `_cfg` is not keyword-only.
+- `from_yaml_file` now accepts a `Path` as an argument.
 
 ### Fixed
 - Bugs in `get_unused_keys`.

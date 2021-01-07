@@ -3,6 +3,7 @@
 import functools
 import inspect
 import logging
+import pathlib
 import pprint
 import traceback
 from typing import (Any, BinaryIO, Callable, Dict, Hashable, Iterator, List, Optional, Set,
@@ -533,7 +534,7 @@ class Configuration:
         return cls(yaml.load(stream, Loader=loader))
 
     @classmethod
-    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, TextIO, BinaryIO],
+    def from_yaml_file(cls: Type[CfgVar], stream: Union[str, pathlib.Path, TextIO, BinaryIO],
                        loader: Any = yaml.Loader) -> CfgVar:
         """Create a configuration from a YAML file.
 
@@ -547,8 +548,8 @@ class Configuration:
         Returns:
             A :class:`Configuration` instance wrapping the loaded configuration.
         """
-        if isinstance(stream, str):
-            with open(stream, 'rb') as f:
+        if isinstance(stream, (str, pathlib.Path)):
+            with pathlib.Path(stream).open('rb') as f:
                 return cls.from_yaml(f, loader)  # type: ignore
         else:
             return cls.from_yaml(stream, loader)  # type: ignore
