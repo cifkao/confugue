@@ -483,14 +483,15 @@ class Configuration:
         defaults_msg = []
         if constructor is not None:
             try:
-                defaults_msg.append('Default constructor: {}{}'.format(
-                    constructor.__name__, inspect.signature(constructor)))
+                defaults_msg.extend('Default constructor: {}{}'.format(
+                    constructor.__name__, inspect.signature(constructor)).split('\n'))
             except (AttributeError, ValueError):
-                defaults_msg.append('Default constructor: {!r}'.format(constructor))
+                defaults_msg.extend('Default constructor: {!r}'.format(constructor).split('\n'))
         if kwargs:
-            defaults_msg.append(
-                'Default kwargs: ' +
-                ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items()))
+            defaults_msg.extend(
+                ('Default kwargs: ' +
+                 ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items())
+                ).split('\n'))
         for line in defaults_msg:
             print(line)
 
