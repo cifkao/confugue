@@ -441,12 +441,19 @@ class Configuration:
         mode = get_interactive_mode()
         if mode == 'none':
             return
-        if mode == 'missing' and self._wrapped is not _MISSING_VALUE:
-            return
 
         if key is None:
             self._interactive_edit_impl(constructor, kwargs, default, name=self.name)
+            if mode == 'missing' and self._wrapped is not _MISSING_VALUE:
+                return
         else:
+
+            if mode == 'missing' and self._wrapped is not _MISSING_VALUE:
+                try:
+                    self._wrapped[key]  # pylint: ignore=pointless-statement
+                    return  # Key exists
+                except (KeyError, IndexError):
+                    pass
             self[key]._interactive_edit_impl(constructor, kwargs, default,
                                              name=self._get_key_name(key))
 
