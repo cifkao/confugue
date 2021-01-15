@@ -491,7 +491,7 @@ class Configuration:
             defaults_msg.extend(
                 ('Default kwargs: ' +
                  ', '.join('{}={!r}'.format(k, v) for k, v in kwargs.items())
-                ).split('\n'))
+                 ).split('\n'))
         for line in defaults_msg:
             print(line)
 
