@@ -5,7 +5,7 @@ Confugue
 
 Confugue is a **hierarchical configuration framework** for Python. It provides a wrapper class for **nested configuration dictionaries** (usually loaded from YAML files), which can be used to easily configure complicated object hierarchies.
 
-The package is ideal for configuring **deep learning** experiments. These often have large numbers of hyperparameters, and managing all their values globally can quickly get tedious. Instead, Confugue allows each part of the deep learning model to be automatically supplied with hyperparameters from a YAML configuration file, eliminating the need to pass them around. The nested structure of the configuration file follows the hierarchy of the model architecture, with each part of the model having access to the corresponding section of the file.
+The package is ideal for configuring **deep learning** experiments. These often have large numbers of hyperparameters, and managing all their values globally can quickly get tedious. Instead, Confugue allows each part of the deep learning model to be automatically supplied with hyperparameters from a YAML configuration file, eliminating the need to pass them around or to define them in multiple places. The nested structure of the configuration file follows the hierarchy of the model architecture, with each part of the model having access to the corresponding section of the file.
 
 As an example, here is a simplified code snippet from a deep learning project which uses Confugue:
 
